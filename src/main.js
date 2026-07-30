@@ -7,7 +7,6 @@
  */
 
 import { getCamera, startCapture, stopCamera } from './camera.js';
-import { createPPGExtractor } from './ppg-extractor.js';
 import { createBandpassFilter } from './signal-filter.js';
 import { detectBeats } from './beat-detector.js';
 import { computeHRV } from './hrv-calculator.js';
@@ -25,7 +24,6 @@ const RECORDING_DURATION = 120;
 let stream = null;
 let track = null;
 let stopCapture = null;
-let ppgExtractor = null;
 let waveform = null;
 let recordingTimer = null;
 let secondsRemaining = RECORDING_DURATION;
@@ -85,18 +83,19 @@ async function setupCamera() {
 function beginCapture() {
   tapOverlay.classList.add('hidden');
 
-  ppgExtractor = createPPGExtractor();
+  // Resize canvas now that it's visible
+  waveform.resize();
+
   allTimestamps = [];
   allGreenValues = [];
 
-  // Quick BPM state
+  // Simple BPM via rolling green-value peaks
   let recentVals = [];
   let lastPeakTime = 0;
   let bpmHistory = [];
 
-  // Start frame capture — video.play() happens inside startCapture(),
-  // now within a fresh user gesture context
   stopCapture = startCapture(track, (greenValue, timestamp) => {
+    // Accumulate all data for end-of-recording analysis
     allGreenValues.push(greenValue);
     allTimestamps.push(timestamp);
 
@@ -105,33 +104,31 @@ function beginCapture() {
       allTimestamps = allTimestamps.slice(-5400);
     }
 
-    // Waveform display — only push every few frames to avoid overload
-    const result = ppgExtractor.add(greenValue, timestamp);
-    if (result && allGreenValues.length % 3 === 0) {
-      // Push just the latest value (smoothed)
-      const sig = result.signal;
-      waveform.push(sig[sig.length - 1]);
+    // Push raw green value to waveform every 3rd frame (~10Hz)
+    if (allGreenValues.length % 3 === 0) {
+      waveform.push(greenValue);
     }
 
-    // Quick BPM from green value peaks (lightweight)
+    // Quick BPM from raw green value peaks (5s rolling window)
     recentVals.push(greenValue);
     if (recentVals.length > 180) recentVals = recentVals.slice(-180);
 
     if (recentVals.length >= 90) {
       const avg = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
-      const threshold = avg * 1.002;
+      const threshold = avg * 1.001; // tiny threshold: pulse = slight brightness dip
       let peakCount = 0;
       for (let i = 1; i < recentVals.length - 1; i++) {
-        if (recentVals[i] > threshold &&
-            recentVals[i] > recentVals[i - 1] &&
-            recentVals[i] >= recentVals[i + 1] &&
-            i - lastPeakTime > 12) {
+        // green value dips when blood absorbs light → look for local minima
+        if (recentVals[i] < threshold &&
+            recentVals[i] < recentVals[i - 1] &&
+            recentVals[i] <= recentVals[i + 1] &&
+            i - lastPeakTime > 10) {
           peakCount++;
           lastPeakTime = i;
         }
       }
       if (peakCount > 0) {
-        const bpm = Math.round(peakCount * 12);
+        const bpm = Math.round(peakCount * 12); // peaks in 5s → peaks/min
         if (bpm >= 40 && bpm <= 180) {
           bpmHistory.push(bpm);
           if (bpmHistory.length > 5) bpmHistory.shift();
@@ -221,7 +218,6 @@ function cancelRecording() {
 }
 
 function cleanup() {
-  ppgExtractor = null;
   allTimestamps = [];
   allGreenValues = [];
   setButtonEnabled('btn-ready', true);

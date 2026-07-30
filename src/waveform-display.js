@@ -43,6 +43,8 @@ export class WaveformDisplay {
     const w = this.width;
     const h = this.height;
 
+    if (w === 0 || h === 0) return;
+
     // Dark background
     ctx.fillStyle = '#131316';
     ctx.fillRect(0, 0, w, h);
@@ -60,14 +62,14 @@ export class WaveformDisplay {
       return;
     }
 
-    // Compute data range for scaling
-    const min = Math.min(...this.data);
-    const max = Math.max(...this.data);
+    // Compute data range (manual loop avoids spread-operator overhead)
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < this.data.length; i++) {
+      if (this.data[i] < min) min = this.data[i];
+      if (this.data[i] > max) max = this.data[i];
+    }
     const range = Math.max(max - min, 0.001);
     const margin = h * 0.1;
-
-    const scaleY = (h - 2 * margin) / range;
-    const offsetY = margin;
 
     // Draw grid lines
     ctx.strokeStyle = '#1A1A1F';
