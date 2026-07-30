@@ -84,7 +84,7 @@ export function createBandpassFilter(sampleRate = 30) {
     },
 
     reset() {
-      for (const stage of stages) stages.reset();
+      for (const stage of stages) stage.reset();
     },
   };
 }
