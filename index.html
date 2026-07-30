@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Screen your autonomic health through your fingertip. Zero-shot psychiatric screening via smartphone camera PPG — no data leaves your device." />
+  <meta name="theme-color" content="#0A0A0C" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>MentalTap — Autonomic Screening</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+
+<main id="app">
+  <!-- Step 0: Welcome -->
+  <section id="step-welcome" class="step active">
+    <div class="hero">
+      <div class="logo-mark">
+        <svg viewBox="0 0 48 48" class="logo-pulse">
+          <path d="M6 24 Q12 12, 18 21 Q21 15, 27 24 Q30 18, 36 24 Q39 30, 42 24"
+                stroke="var(--accent-glow)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <circle cx="42" cy="24" r="3" fill="var(--accent-clinical)" opacity="0.8" />
+        </svg>
+      </div>
+      <h1 class="hero-title">MentalTap</h1>
+      <p class="hero-subtitle">Screen your autonomic health through your fingertip.</p>
+      <p class="hero-description">
+        Your heart rate variability reveals how your nervous system responds to the world.
+        Place your finger on the camera for 2 minutes. No data leaves your device.
+      </p>
+    </div>
+    <button id="btn-start" class="btn-primary">
+      <span class="btn-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/><circle cx="10" cy="10" r="4" fill="currentColor" opacity="0.6"/>
+        </svg>
+      </span>
+      Start Measurement
+    </button>
+    <p class="hero-footnote">
+      No account needed. All processing happens on-device.
+      <br />This is a screening tool, not a diagnosis.
+    </p>
+  </section>
+
+  <!-- Step 1: Setup -->
+  <section id="step-setup" class="step">
+    <div class="setup-card">
+      <div class="setup-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <rect x="16" y="24" width="48" height="36" rx="6" stroke="var(--text-secondary)" stroke-width="2"/>
+          <circle cx="40" cy="42" r="10" stroke="var(--accent-glow)" stroke-width="2"/>
+          <circle cx="40" cy="42" r="4" fill="var(--accent-glow)" opacity="0.4"/>
+          <rect x="32" y="20" width="16" height="4" rx="2" fill="var(--text-secondary)"/>
+          <line x1="28" y1="62" x2="36" y2="52" stroke="var(--text-secondary)" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="28" cy="64" r="3" fill="var(--accent-glow)" opacity="0.6"/>
+        </svg>
+      </div>
+      <h2 class="setup-title">Cover your rear camera</h2>
+      <p class="setup-desc">
+        Press your fingertip firmly against the rear camera and flash.
+        The amber light you see is your pulse.
+      </p>
+      <div class="setup-steps">
+        <div class="setup-step"><span class="step-num">1</span> Switch to rear camera</div>
+        <div class="setup-step"><span class="step-num">2</span> Cover camera + flash with fingertip</div>
+        <div class="setup-step"><span class="step-num">3</span> Stay still for 2 minutes</div>
+      </div>
+      <div class="age-sex-inputs">
+        <label class="field">
+          <span>Age</span>
+          <input type="number" id="input-age" min="18" max="90" value="30" />
+        </label>
+        <label class="field">
+          <span>Sex</span>
+          <select id="input-sex">
+            <option value="male">Male</option>
+            <option value="female" selected>Female</option>
+          </select>
+        </label>
+      </div>
+      <button id="btn-ready" class="btn-primary">I'm Ready</button>
+      <p id="setup-error" class="setup-error hidden"></p>
+    </div>
+  </section>
+
+  <!-- Step 2: Recording -->
+  <section id="step-recording" class="step">
+    <div class="record-header">
+      <div class="timer-display">
+        <span id="timer-minutes" class="timer-num">2</span>
+        <span class="timer-sep">:</span>
+        <span id="timer-seconds" class="timer-num">00</span>
+      </div>
+      <div class="bpm-display">
+        <span id="bpm-value" class="bpm-num">--</span>
+        <span class="bpm-label">BPM</span>
+      </div>
+    </div>
+    <div class="waveform-container">
+      <canvas id="waveform-canvas"></canvas>
+      <div class="waveform-glow"></div>
+    </div>
+    <div class="progress-bar">
+      <div id="progress-fill" class="progress-fill"></div>
+    </div>
+    <p class="record-hint">Keep your fingertip steady. Breathe normally.</p>
+    <button id="btn-cancel" class="btn-ghost">Cancel</button>
+  </section>
+
+  <!-- Step 3: Results -->
+  <section id="step-results" class="step">
+    <h2 class="results-title">Your Autonomic Profile</h2>
+    <p class="results-subtitle">Based on a 2-minute fingertip PPG recording</p>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">SDNN</span>
+        <span id="res-sdnn" class="metric-value">--</span>
+        <span class="metric-unit">ms</span>
+        <span id="res-sdnn-status" class="metric-status"></span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">RMSSD</span>
+        <span id="res-rmssd" class="metric-value">--</span>
+        <span class="metric-unit">ms</span>
+        <span id="res-rmssd-status" class="metric-status"></span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">pNN50</span>
+        <span id="res-pnn50" class="metric-value">--</span>
+        <span class="metric-unit">%</span>
+        <span id="res-pnn50-status" class="metric-status"></span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">LF/HF</span>
+        <span id="res-lfhf" class="metric-value">--</span>
+        <span class="metric-unit">ratio</span>
+        <span id="res-lfhf-status" class="metric-status"></span>
+      </div>
+    </div>
+
+    <div class="results-divider"></div>
+
+    <h3 class="screening-title">Screening Results</h3>
+    <p class="screening-subtitle">Autonomic patterns associated with:</p>
+
+    <div id="screening-results" class="screening-list">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="disclaimer">
+      <strong>Important:</strong> This is an experimental screening tool, not a clinical diagnosis.
+      These patterns are based on published research on heart rate variability and mental health.
+      Consult a healthcare professional for proper evaluation.
+    </div>
+
+    <div class="results-actions">
+      <button id="btn-retake" class="btn-secondary">Take Another Reading</button>
+    </div>
+  </section>
+
+  <!-- Step: Error -->
+  <section id="step-error" class="step">
+    <div class="error-card">
+      <h2 class="error-title">Something went wrong</h2>
+      <p id="error-message" class="error-message"></p>
+      <button id="btn-retry" class="btn-primary">Try Again</button>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
