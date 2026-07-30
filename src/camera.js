@@ -1,10 +1,10 @@
 /**
  * Camera access and frame capture for fingertip PPG.
- * Requests rear camera with flash, captures frames at 30fps.
+ * Requests rear camera with flash, captures frames at ~30fps.
+ * Adds video to DOM — required for reliable autoplay on mobile.
  */
 
 export async function getCamera() {
-  // Try rear camera first, fall back to any camera
   const constraints = {
     video: {
       facingMode: { ideal: 'environment' },
@@ -19,23 +19,17 @@ export async function getCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia(constraints);
   } catch {
-    // Fallback: any camera
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: false,
-    });
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
   }
 
   const track = stream.getVideoTracks()[0];
+  if (!track) throw new Error('No video track available');
 
-  // Try to enable torch/flashlight
+  // Enable torch on supported browsers (Chrome Android)
   try {
-    await track.applyConstraints({
-      advanced: [{ torch: true }],
-    });
+    await track.applyConstraints({ advanced: [{ torch: true }] });
   } catch {
-    // torch not supported (iOS Safari) — user must be in bright environment
-    console.warn('Torch not available. Using ambient light.');
+    // iOS Safari: torch not supported, fall back to ambient light
   }
 
   return { stream, track };
@@ -43,32 +37,39 @@ export async function getCamera() {
 
 /**
  * Start capturing frames from the video stream.
- * Calls `onFrame` with the green-channel average at each animation frame.
- * Returns a stop function.
+ * Returns a stop function. The video element is added to the DOM
+ * because offscreen videos fail to play reliably on mobile.
  */
 export function startCapture(track, onFrame) {
-  const capabilities = track.getCapabilities?.() || {};
-  const maxWidth = capabilities.width?.max || 640;
-  const maxHeight = capabilities.height?.max || 480;
-
-  // Create offscreen elements for frame processing
+  // Create and DOM-attach video element (critical for mobile autoplay)
+  const container = document.getElementById('video-container');
   const video = document.createElement('video');
-  video.srcObject = new MediaStream([track]);
+  video.id = 'capture-video';
   video.playsInline = true;
   video.muted = true;
+  video.autoplay = true;
   video.setAttribute('playsinline', '');
-  video.play().catch(console.error);
+  video.setAttribute('webkit-playsinline', '');
+  video.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;';
+  container.appendChild(video);
 
+  video.srcObject = new MediaStream([track]);
+
+  // Await play — failures here mean no frames
+  const playPromise = video.play();
+  let videoReady = false;
+  playPromise.then(() => { videoReady = true; }).catch(err => {
+    console.error('Video play failed:', err);
+  });
+
+  // Offscreen canvas for frame extraction
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-  // Use a small capture resolution for performance
-  const capW = Math.min(maxWidth, 320);
-  const capH = Math.min(maxHeight, 240);
+  const capW = 320, capH = 240;
   canvas.width = capW;
   canvas.height = capH;
 
-  // ROI: center of frame (where fingertip is)
+  // ROI: center 60% (where fingertip presses)
   const roiX = Math.floor(capW * 0.2);
   const roiY = Math.floor(capH * 0.2);
   const roiW = Math.floor(capW * 0.6);
@@ -76,33 +77,33 @@ export function startCapture(track, onFrame) {
 
   let animId;
   let lastTime = 0;
-  const targetInterval = 1000 / 30; // 30fps target
+  const targetInterval = 33; // ~30fps
+  let frameCount = 0;
 
   function processFrame(timestamp) {
     animId = requestAnimationFrame(processFrame);
 
-    // Throttle to ~30fps
-    if (timestamp - lastTime < targetInterval - 2) return;
+    if (timestamp - lastTime < targetInterval) return;
     lastTime = timestamp;
 
-    if (video.readyState < 2) return;
+    // Wait for video to actually be playing
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
 
     try {
       ctx.drawImage(video, 0, 0, capW, capH);
       const imageData = ctx.getImageData(roiX, roiY, roiW, roiH);
       const pixels = imageData.data;
 
-      // Average the GREEN channel only (most sensitive to blood volume changes)
       let greenSum = 0;
       const n = roiW * roiH;
       for (let i = 1; i < pixels.length; i += 4) {
         greenSum += pixels[i];
       }
       const greenAvg = greenSum / n;
-
+      frameCount++;
       onFrame(greenAvg, timestamp);
     } catch {
-      // Frame capture can fail if video not ready — skip frame
+      // Skip frame on error
     }
   }
 
@@ -112,6 +113,7 @@ export function startCapture(track, onFrame) {
     cancelAnimationFrame(animId);
     video.pause();
     video.srcObject = null;
+    if (video.parentNode) video.parentNode.removeChild(video);
   };
 }
 
