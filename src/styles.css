@@ -590,6 +590,29 @@ body {
   font-style: normal;
 }
 
+/* ---- Language switcher ---- */
+.lang-switch {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  padding: 5px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.lang-switch:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
 /* ---- References list ---- */
 .references-list {
   display: flex;

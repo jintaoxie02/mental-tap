@@ -14,11 +14,13 @@ import { computeWaveformFeatures } from './waveform-features.js';
 import { screenDisorders } from './zero-shot.js';
 import { estimateGlucose } from './glucose-estimator.js';
 import { WaveformDisplay } from './waveform-display.js';
+import { t, initLang, setLang, getLang } from './i18n.js';
 import {
   showStep, updateTimer, updateBPM, updateProgress,
   renderResults, showError, showSetupError,
   setButtonEnabled, getAgeSex, triggerBeatVisual,
 } from './ui.js';
+import { translatePage } from './translate.js';
 
 const RECORDING_DURATION = 120;
 
@@ -37,6 +39,66 @@ const waveformCanvas = document.getElementById('waveform-canvas');
 const tapOverlay = document.getElementById('tap-overlay');
 
 waveform = new WaveformDisplay(waveformCanvas);
+
+// Init i18n
+initLang();
+translatePage();
+
+// Language switcher
+const langSwitch = document.getElementById('lang-switch');
+langSwitch.addEventListener('click', () => {
+  const next = getLang() === 'en' ? 'zh-HK' : 'en';
+  setLang(next);
+  translatePage();
+  langSwitch.textContent = t('lang.switch');
+  // Re-render explainers if results are visible
+  const explainerMetrics = document.getElementById('explainer-metrics');
+  const explainerCalc = document.getElementById('explainer-calc');
+  if (explainerMetrics) {
+    explainerMetrics.querySelector('.explainer-content').innerHTML = t('explain.metrics');
+  }
+  if (explainerCalc) {
+    explainerCalc.querySelector('.explainer-content').innerHTML = t('explain.calc');
+  }
+  renderRefs();
+  updateDisclaimer();
+});
+langSwitch.textContent = t('lang.switch');
+
+function updateDisclaimer() {
+  const disc = document.querySelector('.disclaimer');
+  if (disc) disc.innerHTML = t('results.disclaimer');
+}
+updateDisclaimer();
+
+// Render reference list (called on init and lang switch)
+function renderRefs() {
+  const container = document.getElementById('refs-container');
+  if (!container) return;
+  const refs = [
+    ['tag.hrv_norms', 'ref.hrv_norms_berg'],
+    ['tag.hrv_norms', 'ref.hrv_norms_ortega'],
+    ['tag.depression', 'ref.depression_wu'],
+    ['tag.all_disorders', 'ref.all_transpsych'],
+    ['tag.smartphone_ppg', 'ref.ppg_cajal'],
+    ['tag.smartphone_ppg', 'ref.ppg_liu'],
+    ['tag.pulse_waveform', 'ref.waveform_kaizu'],
+    ['tag.suicidal_ideation', 'ref.suicide_khandoker'],
+    ['tag.wearable_ppg', 'ref.bipolar_lyu'],
+    ['tag.multi_disorder', 'ref.multi_gpsychsw'],
+    ['tag.signal_processing', 'ref.signal_cho'],
+    ['tag.ppg_glucose', 'ref.glucose_chinchanikar'],
+    ['tag.ppg_glucose', 'ref.glucose_raju'],
+    ['tag.ppg_glucose', 'ref.glucose_sridevi'],
+    ['tag.metabolic', 'ref.metabolic_wong'],
+    ['tag.multimodal', 'ref.multimodal_jin'],
+  ];
+  container.innerHTML = refs.map(([tag, ref]) =>
+    `<div class="ref"><span class="ref-tag">${t(tag)}</span><span>${t(ref)}</span></div>`
+  ).join('');
+}
+renderRefs();
+
 showStep('step-welcome');
 
 document.getElementById('btn-start').addEventListener('click', () => showStep('step-setup'));
@@ -73,9 +135,9 @@ async function setupCamera() {
 
   } catch (err) {
     console.error('Setup error:', err);
-    let msg = err.message || 'Camera access failed.';
-    if (err.name === 'NotAllowedError') msg = 'Camera permission denied. Allow camera access and try again.';
-    else if (err.name === 'NotFoundError') msg = 'No rear camera found.';
+    let msg = err.message || t('error.camera_unavailable');
+    if (err.name === 'NotAllowedError') msg = t('error.camera_denied');
+    else if (err.name === 'NotFoundError') msg = t('error.camera_not_found');
     showSetupError(msg);
     setButtonEnabled('btn-ready', true);
   }
@@ -210,7 +272,7 @@ function finishRecording() {
   if (stream) { stopCamera(stream); stream = null; track = null; }
 
   if (allGreenValues.length < 180) {
-    showError('Not enough data. Keep your fingertip steady for the full duration.');
+    showError(t('error.no_data'));
     cleanup();
     return;
   }
@@ -262,7 +324,7 @@ function finishRecording() {
     showStep('step-results');
   } catch (err) {
     console.error('Analysis error:', err);
-    showError('Analysis failed. Try again with a steady fingertip.');
+    showError(t('error.analysis_failed'));
   }
 
   cleanup();

@@ -2,6 +2,7 @@
  * UI Controller — manages step transitions, DOM updates, and user interactions.
  */
 
+import { t } from './i18n.js';
 import { getMetricStatus } from './zero-shot.js';
 
 const STEPS = ['step-welcome', 'step-setup', 'step-recording', 'step-results', 'step-error'];
@@ -151,7 +152,7 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
     item.innerHTML = `
       <div>
         <span class="screening-name">${r.name}</span>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${r.description}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${t(`disorder.${r.id}`)}</div>
         ${priorInfo}
       </div>
       <span class="screening-confidence ${r.level}">${r.level === 'high' ? '⚠ ' : ''}${probDisplay}</span>
@@ -164,7 +165,7 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
   if (allLow) {
     const note = document.createElement('p');
     note.style.cssText = 'color: var(--text-muted); font-size: 0.82rem; text-align: center; margin-top: var(--space-md);';
-    note.textContent = 'All posterior probabilities are at or near population baseline — your autonomic profile does not suggest elevated risk for any screened condition. This does not rule out mental health conditions.';
+    note.textContent = t('results.all_low');
     listEl.appendChild(note);
   }
 }

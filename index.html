@@ -17,6 +17,7 @@
 <body>
 
 <div id="video-container"></div>
+<button id="lang-switch" class="lang-switch" title="Switch language">中文</button>
 
 <main id="app">
   <!-- Step 0: Welcome -->
@@ -29,12 +30,9 @@
           <circle cx="42" cy="24" r="3" fill="var(--accent-clinical)" opacity="0.8" />
         </svg>
       </div>
-      <h1 class="hero-title">MentalTap</h1>
-      <p class="hero-subtitle">Screen your autonomic health through your fingertip.</p>
-      <p class="hero-description">
-        Your heart rate variability reveals how your nervous system responds to the world.
-        Place your finger on the camera for 2 minutes. No data leaves your device.
-      </p>
+      <h1 class="hero-title" data-i18n="hero.title">MentalTap</h1>
+      <p class="hero-subtitle" data-i18n="hero.subtitle">Screen your autonomic health through your fingertip.</p>
+      <p class="hero-description" data-i18n="hero.desc">Your heart rate variability reveals how your nervous system responds to the world. Place your finger on the camera for 2 minutes. No data leaves your device.</p>
     </div>
     <button id="btn-start" class="btn-primary">
       <span class="btn-icon">
@@ -42,12 +40,9 @@
           <circle cx="12" cy="12" r="9"/><circle cx="10" cy="10" r="4" fill="currentColor" opacity="0.6"/>
         </svg>
       </span>
-      Start Measurement
+      <span data-i18n="hero.start">Start Measurement</span>
     </button>
-    <p class="hero-footnote">
-      No account needed. All processing happens on-device.
-      <br />This is a screening tool, not a diagnosis.
-    </p>
+    <p class="hero-footnote" data-i18n="hero.footnote">No account needed. All processing happens on-device. This is a screening tool, not a diagnosis.</p>
   </section>
 
   <!-- Step 1: Setup -->
@@ -63,30 +58,27 @@
           <circle cx="28" cy="64" r="3" fill="var(--accent-glow)" opacity="0.6"/>
         </svg>
       </div>
-      <h2 class="setup-title">Cover your rear camera</h2>
-      <p class="setup-desc">
-        Press your fingertip firmly against the rear camera and flash.
-        The amber light you see is your pulse.
-      </p>
+      <h2 class="setup-title" data-i18n="setup.title">Cover your rear camera</h2>
+      <p class="setup-desc" data-i18n="setup.desc">Press your fingertip firmly against the rear camera and flash. The amber light you see is your pulse.</p>
       <div class="setup-steps">
-        <div class="setup-step"><span class="step-num">1</span> Switch to rear camera</div>
-        <div class="setup-step"><span class="step-num">2</span> Cover camera + flash with fingertip</div>
-        <div class="setup-step"><span class="step-num">3</span> Stay still for 2 minutes</div>
+        <div class="setup-step"><span class="step-num">1</span> <span data-i18n="setup.step1">Switch to rear camera</span></div>
+        <div class="setup-step"><span class="step-num">2</span> <span data-i18n="setup.step2">Cover camera + flash with fingertip</span></div>
+        <div class="setup-step"><span class="step-num">3</span> <span data-i18n="setup.step3">Stay still for 2 minutes</span></div>
       </div>
       <div class="age-sex-inputs">
         <label class="field">
-          <span>Age</span>
+          <span data-i18n="setup.age">Age</span>
           <input type="number" id="input-age" min="18" max="90" value="30" />
         </label>
         <label class="field">
-          <span>Sex</span>
+          <span data-i18n="setup.sex">Sex</span>
           <select id="input-sex">
-            <option value="male">Male</option>
-            <option value="female" selected>Female</option>
+            <option value="male" data-i18n="setup.male">Male</option>
+            <option value="female" selected data-i18n="setup.female">Female</option>
           </select>
         </label>
       </div>
-      <button id="btn-ready" class="btn-primary">I'm Ready</button>
+      <button id="btn-ready" class="btn-primary"><span data-i18n="setup.ready">I'm Ready</span></button>
       <p id="setup-error" class="setup-error hidden"></p>
     </div>
   </section>
@@ -110,58 +102,48 @@
       <div class="waveform-glow"></div>
       <div id="tap-overlay" class="tap-overlay">
         <div class="tap-pulse"></div>
-        <p class="tap-text">Place fingertip on camera, then tap here to start</p>
+        <p class="tap-text" data-i18n="record.tap">Place fingertip on camera, then tap here to start</p>
       </div>
     </div>
     <div class="progress-bar">
       <div id="progress-fill" class="progress-fill"></div>
     </div>
-    <p class="record-hint">Keep your fingertip steady. Breathe normally.</p>
-    <button id="btn-cancel" class="btn-ghost">Cancel</button>
+    <p class="record-hint" data-i18n="record.hint">Keep your fingertip steady. Breathe normally.</p>
+    <button id="btn-cancel" class="btn-ghost"><span data-i18n="record.cancel">Cancel</span></button>
   </section>
 
-  <!-- Step 3: Results -->
+  <!-- Step 3: Results (most text populated by JS via i18n) -->
   <section id="step-results" class="step">
-    <h2 class="results-title">Your Autonomic Profile</h2>
-    <p class="results-subtitle">Based on a 2-minute fingertip PPG recording</p>
+    <h2 class="results-title" data-i18n="results.title">Your Autonomic Profile</h2>
+    <p class="results-subtitle" data-i18n="results.subtitle">Based on a 2-minute fingertip PPG recording</p>
 
     <div class="metrics-grid">
       <div class="metric-card">
-        <span class="metric-label">SDNN
-          <span class="metric-tooltip" data-tip="Standard deviation of all heartbeat intervals. Measures total autonomic flexibility — how much your heart rate varies overall. Higher is generally better. The strongest HRV marker for depression (g = −0.87 in meta-analyses).">ⓘ</span>
-        </span>
+        <span class="metric-label">SDNN <span class="metric-tooltip" data-i18n-tip="results.sdnn_tip">ⓘ</span></span>
         <span id="res-sdnn" class="metric-value">--</span>
         <span class="metric-unit">ms</span>
         <span id="res-sdnn-status" class="metric-status"></span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">RMSSD
-          <span class="metric-tooltip" data-tip="Root Mean Square of Successive Differences. Reflects beat-to-beat changes driven by the vagus nerve (parasympathetic / rest-and-digest system). Higher RMSSD = stronger vagal tone = better stress recovery.">ⓘ</span>
-        </span>
+        <span class="metric-label">RMSSD <span class="metric-tooltip" data-i18n-tip="results.rmssd_tip">ⓘ</span></span>
         <span id="res-rmssd" class="metric-value">--</span>
         <span class="metric-unit">ms</span>
         <span id="res-rmssd-status" class="metric-status"></span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">pNN50
-          <span class="metric-tooltip" data-tip="Percentage of consecutive heartbeats that differ by more than 50 milliseconds. Another vagal/parasympathetic measure. Lower pNN50 indicates less moment-to-moment heart rate flexibility, often seen in anxiety and depression.">ⓘ</span>
-        </span>
+        <span class="metric-label">pNN50 <span class="metric-tooltip" data-i18n-tip="results.pnn50_tip">ⓘ</span></span>
         <span id="res-pnn50" class="metric-value">--</span>
         <span class="metric-unit">%</span>
         <span id="res-pnn50-status" class="metric-status"></span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">LF/HF
-          <span class="metric-tooltip" data-tip="Ratio of Low-Frequency (0.04–0.15 Hz) to High-Frequency (0.15–0.40 Hz) heart rate power. Roughly reflects sympathetic (fight/flight) vs parasympathetic (rest/digest) balance. ~1.5 is normal; >2.5 suggests sympathetic dominance (stress/anxiety); <1.0 may indicate parasympathetic withdrawal (depression). This ratio is debated in research — interpret with caution.">ⓘ</span>
-        </span>
+        <span class="metric-label">LF/HF <span class="metric-tooltip" data-i18n-tip="results.lfhf_tip">ⓘ</span></span>
         <span id="res-lfhfRatio" class="metric-value">--</span>
         <span class="metric-unit">ratio</span>
         <span id="res-lfhf-status" class="metric-status"></span>
       </div>
       <div class="metric-card glucose-card">
-        <span class="metric-label">Glucose (est.)
-          <span class="metric-tooltip" data-tip="Estimated fasting blood glucose from PPG waveform features. Based on published PPG-glucose regression models (R² up to 0.96 in research). Uses heart rate, HRV, and arterial stiffness features. This is a screening estimate — not equivalent to a finger-prick or lab test. Normal fasting: <5.6 mmol/L (<100 mg/dL).">ⓘ</span>
-        </span>
+        <span class="metric-label">Glucose (est.) <span class="metric-tooltip" data-i18n-tip="results.glucose_tip">ⓘ</span></span>
         <span id="res-glucose" class="metric-value">--</span>
         <span class="metric-unit">mmol/L</span>
         <span id="res-glucose-status" class="metric-status"></span>
@@ -169,128 +151,41 @@
       </div>
     </div>
 
-    <details class="metrics-explainer">
-      <summary>What do these metrics mean?</summary>
-      <div class="explainer-content">
-        <p><strong>SDNN</strong> — Total heart rate variability. Think of it as your heart's overall adaptability. Athletes and healthy young adults often have SDNN > 50ms. Values below 30ms warrant attention. This is the strongest HRV marker for depression in research literature.</p>
-        <p><strong>RMSSD</strong> — Short-term, beat-to-beat variability controlled by your vagus nerve. This nerve is the main highway of your parasympathetic nervous system — it slows your heart, calms your body, and helps you recover from stress. RMSSD naturally declines with age.</p>
-        <p><strong>pNN50</strong> — How often your heart makes meaningful beat-to-beat adjustments (>50ms). A complementary measure to RMSSD. If pNN50 is low, your heart isn't making many moment-to-moment adjustments, which can indicate chronic stress or autonomic rigidity.</p>
-        <p><strong>LF/HF</strong> — The balance between your sympathetic ("go") and parasympathetic ("slow") systems. This ratio is most useful for detecting sympathetic overdrive (anxiety, PTSD). It is <em>not</em> a reliable depression marker — many depressed individuals have normal LF/HF ratios. The absolute power in each band (LF power, HF power) is often more informative than the ratio.</p>
-        <p><strong>Glucose (est.)</strong> — Estimated fasting blood glucose derived from PPG waveform features (heart rate, HRV, arterial stiffness indices). Uses a multi-feature linear model calibrated against published PPG-glucose studies (R² up to 0.96 in research settings). Normal fasting: &lt;5.6 mmol/L (&lt;100 mg/dL); pre-diabetic: 5.6–6.9; diabetic: ≥7.0. <em>This is a screening estimate, not a replacement for a blood test.</em></p>
-        <p><strong>Status labels</strong> (LOW / NORMAL / HIGH) compare your value against age- and sex-matched population norms from studies of 13,000+ healthy participants. "Low" means more than 1.5 standard deviations below the norm for your demographic.</p>
-      </div>
+    <details class="metrics-explainer" id="explainer-metrics">
+      <summary data-i18n="results.metrics_explain">What do these metrics mean?</summary>
+      <div class="explainer-content" data-i18n-html="explain.metrics"></div>
     </details>
 
     <div class="results-divider"></div>
 
-    <h3 class="screening-title">Screening Results</h3>
-    <p class="screening-subtitle">Autonomic patterns compared against known disorder signatures from meta-analyses covering 34,000+ participants:</p>
+    <h3 class="screening-title" data-i18n="results.screening_title">Screening Results</h3>
+    <p class="screening-subtitle" data-i18n="results.screening_subtitle">Bayesian posterior probabilities compared against published disorder signatures from 34,000+ participants:</p>
 
-    <div id="screening-results" class="screening-list">
-      <!-- Populated by JS -->
-    </div>
+    <div id="screening-results" class="screening-list"></div>
 
-    <details class="metrics-explainer">
-      <summary>How are these calculated?</summary>
-      <div class="explainer-content">
-        <p>Each condition has a known "autonomic signature" — a pattern of which HRV metrics are typically reduced or elevated, based on published meta-analyses:</p>
-        <p><strong>Depression</strong> — Broad HRV reduction. SDNN is typically most affected (g = −0.87). RMSSD and HF power moderately reduced (g ≈ −0.51). LF/HF ratio usually normal. Source: Wu et al. (2023), meta-analysis of 43 studies.</p>
-        <p><strong>Anxiety (GAD)</strong> — Mild to moderate HRV reduction, particularly in parasympathetic indices (RMSSD, HF). Some sympathetic dominance (↑ LF/HF). Less pronounced than depression.</p>
-        <p><strong>PTSD</strong> — Broad HRV reduction with possible sympathetic dominance. One of the stronger HRV-psychiatric associations in the 2025 umbrella review (Translational Psychiatry, Nature).</p>
-        <p><strong>Bipolar Disorder</strong> — Mild HRV reduction. May normalize during stable (euthymic) periods. Weaker and less consistent than unipolar depression.</p>
-        <p><strong>Schizophrenia</strong> — Strong parasympathetic reduction (↓↓ RMSSD, ↓↓ HF). The most robust HRV finding across all psychiatric conditions in the umbrella review.</p>
-        <p><strong>Bayesian probability estimation</strong> — Uses a Naive Bayes model. The <em>prior</em> is the population prevalence (e.g., ~5% for depression). Each HRV and glucose feature contributes a <em>Bayes Factor</em>: how much more likely your value is under the disorder distribution vs the healthy distribution, using effect sizes (Hedges' g) from meta-analyses to shift the disorder distribution. Bayes' theorem combines the prior with all feature likelihoods to produce a <em>posterior probability</em> — P(disorder | your data). Published multimodal studies confirm combining HRV with metabolic markers improves accuracy from ~64% to ~80% (Jin et al., 2017).</p>
-        <p>The percentage shown is the Bayesian posterior probability. For context, the population baseline is shown alongside. <strong>This is a screening estimate, not a clinical diagnosis.</strong></p>
-      </div>
+    <details class="metrics-explainer" id="explainer-calc">
+      <summary data-i18n="results.calc_explain">How are these calculated?</summary>
+      <div class="explainer-content" data-i18n-html="explain.calc"></div>
     </details>
 
-    <details class="metrics-explainer">
-      <summary>Academic references</summary>
-      <div class="explainer-content references-list">
-        <div class="ref">
-          <span class="ref-tag">HRV norms</span>
-          <span><strong>van den Berg et al. (2018)</strong> — Normal values of corrected heart-rate variability in 10-second electrocardiograms for all ages. <em>Frontiers in Physiology</em>. 13,943 healthy participants, ages 11 days to 91 years. First comprehensive lifespan HRV reference ranges. Used for age/sex normalization of SDNN and RMSSD.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">HRV norms</span>
-          <span><strong>Ortega et al. (2024)</strong> — "The Pulse of Singapore." <em>Applied Psychophysiology & Biofeedback</em>. 2,143 healthy participants, ages 10–89. Population norms: RMSSD ≈ 42 ms, SDNN ≈ 52 ms (5-min recordings). Used for pNN50 normative ranges.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Depression</span>
-          <span><strong>Wu et al. (2023)</strong> — Heart rate variability status at rest in adult depressed patients: a systematic review and meta-analysis. <em>Frontiers in Public Health</em>. 43 case-control studies, 2,359 depressed vs 3,547 controls. SDNN Hedge's g = −0.87 (largest effect). Used for depression autonomic signature weights.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">All disorders</span>
-          <span><strong>Translational Psychiatry (2025)</strong> — Heart rate variability in mental disorders: an umbrella review of meta-analyses. <em>Nature</em>. 21 systematic reviews, 442 primary studies, 34,625 participants across 19 mental disorders. Classifies evidence as convincing/suggestive/weak. Used for disorder signatures and confidence thresholds.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Smartphone PPG</span>
-          <span><strong>Cajal et al. (2025)</strong> — Evaluation of Stress Response Using Smartphone PPG for Anxiety and Depression Monitoring. <em>IEEE</em>. 79 participants (22 patients, 57 controls). Validated smartphone PPG against medical-grade device: r ≥ 0.96. First SCPPG study with clinical anxiety/depression populations.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Smartphone PPG</span>
-          <span><strong>Liu et al. (2020)</strong> — Happiness at Your Fingertips: Assessing Mental Health with Smartphone Photoplethysmogram-Based Heart Rate Variability Analysis. <em>Telemedicine and e-Health</em>. 93 participants. 4-minute fingertip video. Higher HRV = higher well-being; lower HRV = depression and anxiety.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Pulse waveform</span>
-          <span><strong>Kaizu et al. (2026)</strong> — Assessing Mental Health and Emotional States by Using Smartphone Photoplethysmography–Based Digital Pulse Waveform Analysis. <em>JMIR mHealth and uHealth</em>. 127 participants. 7 pulse waveform features (F/A, V0, reflection index, crest time) associated with depression and anxiety.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Suicidal ideation</span>
-          <span><strong>Khandoker et al. (2017)</strong> — Suicidal Ideation Is Associated with Altered Variability of Fingertip Photo-Plethysmogram Signal in Depressed Patients. <em>Frontiers in Physiology</em>. 61 participants. Tone-entropy analysis of fingertip PPG achieved 93.33% accuracy for suicidal ideation classification.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Wearable PPG</span>
-          <span><strong>Lyu et al. (2025)</strong> — Wearable Photoplethysmography-based Bipolar Disorder Detection. <em>CSAI 2024 (ACM)</em>. Wavelet transform + SVM on PPG from smartwatch. 86.5% accuracy distinguishing mania, bipolar depression, and healthy states.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Multi-disorder</span>
-          <span><strong>G-PsychSW (2025)</strong> — Generalizable Psychiatric Screening from Wearable: Causal Disentanglement of Multi-Channel Biosignals. <em>IEEE BIBM</em>. PPG + GSR + skin temperature. 80.16% accuracy for 4-class screening (depression, anxiety, bipolar, healthy). Leave-one-subject-out validation.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Signal processing</span>
-          <span><strong>Cho et al. (2018)</strong> — Instant Automated Inference of Perceived Mental Stress through Smartphone PPG and Thermal Imaging. <em>JMIR Mental Health</em>. Combined smartphone camera PPG with low-cost thermal camera for stress detection in 17 participants over 20-second measurements.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">PPG-glucose</span>
-          <span><strong>Chinchanikar & Dale (2025)</strong> — Multimodal Approach for Non-Invasive Blood Glucose Estimation Using Fingertip Video. <em>MMEP</em>. 243 subjects. Hybrid ResNet + handcrafted PPG features. R² = 0.88, MAE = 14.50 mg/dL. Bland-Altman >90% agreement with reference.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">PPG-glucose</span>
-          <span><strong>Raju et al. (2022)</strong> — SmartPPG-Glucose: non-invasive glucose from smartphone PPG. 93 subjects. DNN with MIC feature selection on 34 PPG features. R² = 0.96. Foundation for the PPG-to-glucose feature mapping used in MentalTap.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">PPG-glucose</span>
-          <span><strong>Sridevi et al. (2025)</strong> — Noninvasive estimation of blood glucose and HbA1c using Quantum Machine Learning. <em>Elsevier</em>. 136 subjects. Quantum SVM on 45 PPG features. 89.3% accuracy for glucose, 96.3% for HbA1c.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Metabolic</span>
-          <span><strong>Wong et al. (2026)</strong> — Depressive symptom severity and metabolic disturbances in MDD and bipolar disorders: a systematic review and meta-analysis. <em>Journal of Affective Disorders</em>. 28 studies, 22,897 participants. Fasting glucose SMD = 0.30 in depression. Insulin resistance associated with anhedonia, sleep disturbances, and suicidal ideation.</span>
-        </div>
-        <div class="ref">
-          <span class="ref-tag">Multimodal</span>
-          <span><strong>Jin et al. (2017)</strong> — Diagnosis of MDD by combining multimodal information from heart rate dynamics and serum proteomics using machine-learning. <em>Progress in Neuro-Psychopharmacology & Biological Psychiatry</em>. HRV alone: 64% accuracy; HRV + metabolic proteomics: 80.1%. Demonstrates value of combining autonomic + metabolic biomarkers.</span>
-        </div>
-      </div>
+    <details class="metrics-explainer" id="explainer-refs">
+      <summary data-i18n="results.refs">Academic references</summary>
+      <div class="explainer-content references-list" id="refs-container"></div>
     </details>
 
-    <div class="disclaimer">
-      <strong>Important:</strong> This is an experimental screening tool, not a clinical diagnosis.
-      These patterns are based on published research on heart rate variability and mental health.
-      Consult a healthcare professional for proper evaluation.
-    </div>
+    <div class="disclaimer" data-i18n="results.disclaimer"><strong>Important:</strong> This is an experimental screening tool, not a clinical diagnosis. These patterns are based on published research on heart rate variability and mental health. Consult a healthcare professional for proper evaluation.</div>
 
     <div class="results-actions">
-      <button id="btn-retake" class="btn-secondary">Take Another Reading</button>
+      <button id="btn-retake" class="btn-secondary"><span data-i18n="results.retake">Take Another Reading</span></button>
     </div>
   </section>
 
   <!-- Step: Error -->
   <section id="step-error" class="step">
     <div class="error-card">
-      <h2 class="error-title">Something went wrong</h2>
+      <h2 class="error-title" data-i18n="error.title">Something went wrong</h2>
       <p id="error-message" class="error-message"></p>
-      <button id="btn-retry" class="btn-primary">Try Again</button>
+      <button id="btn-retry" class="btn-primary"><span data-i18n="error.retry">Try Again</span></button>
     </div>
   </section>
 </main>
