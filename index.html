@@ -158,6 +158,15 @@
         <span class="metric-unit">ratio</span>
         <span id="res-lfhf-status" class="metric-status"></span>
       </div>
+      <div class="metric-card glucose-card">
+        <span class="metric-label">Glucose (est.)
+          <span class="metric-tooltip" data-tip="Estimated fasting blood glucose from PPG waveform features. Based on published PPG-glucose regression models (R² up to 0.96 in research). Uses heart rate, HRV, and arterial stiffness features. This is a screening estimate — not equivalent to a finger-prick or lab test. Normal fasting: <5.6 mmol/L (<100 mg/dL).">ⓘ</span>
+        </span>
+        <span id="res-glucose" class="metric-value">--</span>
+        <span class="metric-unit">mmol/L</span>
+        <span id="res-glucose-status" class="metric-status"></span>
+        <span id="glucose-note" class="glucose-note"></span>
+      </div>
     </div>
 
     <details class="metrics-explainer">
@@ -167,6 +176,7 @@
         <p><strong>RMSSD</strong> — Short-term, beat-to-beat variability controlled by your vagus nerve. This nerve is the main highway of your parasympathetic nervous system — it slows your heart, calms your body, and helps you recover from stress. RMSSD naturally declines with age.</p>
         <p><strong>pNN50</strong> — How often your heart makes meaningful beat-to-beat adjustments (>50ms). A complementary measure to RMSSD. If pNN50 is low, your heart isn't making many moment-to-moment adjustments, which can indicate chronic stress or autonomic rigidity.</p>
         <p><strong>LF/HF</strong> — The balance between your sympathetic ("go") and parasympathetic ("slow") systems. This ratio is most useful for detecting sympathetic overdrive (anxiety, PTSD). It is <em>not</em> a reliable depression marker — many depressed individuals have normal LF/HF ratios. The absolute power in each band (LF power, HF power) is often more informative than the ratio.</p>
+        <p><strong>Glucose (est.)</strong> — Estimated fasting blood glucose derived from PPG waveform features (heart rate, HRV, arterial stiffness indices). Uses a multi-feature linear model calibrated against published PPG-glucose studies (R² up to 0.96 in research settings). Normal fasting: &lt;5.6 mmol/L (&lt;100 mg/dL); pre-diabetic: 5.6–6.9; diabetic: ≥7.0. <em>This is a screening estimate, not a replacement for a blood test.</em></p>
         <p><strong>Status labels</strong> (LOW / NORMAL / HIGH) compare your value against age- and sex-matched population norms from studies of 13,000+ healthy participants. "Low" means more than 1.5 standard deviations below the norm for your demographic.</p>
       </div>
     </details>
@@ -189,7 +199,8 @@
         <p><strong>PTSD</strong> — Broad HRV reduction with possible sympathetic dominance. One of the stronger HRV-psychiatric associations in the 2025 umbrella review (Translational Psychiatry, Nature).</p>
         <p><strong>Bipolar Disorder</strong> — Mild HRV reduction. May normalize during stable (euthymic) periods. Weaker and less consistent than unipolar depression.</p>
         <p><strong>Schizophrenia</strong> — Strong parasympathetic reduction (↓↓ RMSSD, ↓↓ HF). The most robust HRV finding across all psychiatric conditions in the umbrella review.</p>
-        <p>The confidence percentage reflects how many standard deviations your HRV pattern deviates from age/sex norms, weighted by each feature's importance for that condition. <strong>This is a screening signal, not a probability of having the condition.</strong></p>
+        <p><strong>Combined HRV + Glucose approach</strong> — The screening uses both autonomic (HRV) and metabolic (estimated glucose) biomarkers. Published multimodal studies show combining modalities improves diagnostic accuracy significantly: HRV alone achieves ~64% accuracy for MDD classification, but combining HRV with metabolic markers reaches ~80% (Jin et al., 2017, <em>Progress in Neuro-Psychopharmacology & Biological Psychiatry</em>). Each feature is weighted by its disorder-specific effect size from meta-analyses.</p>
+        <p>The confidence percentage reflects how many standard deviations your combined autonomic-metabolic pattern deviates from age/sex norms, weighted by each feature's importance for that condition. <strong>This is a screening signal, not a probability of having the condition.</strong></p>
       </div>
     </details>
 
@@ -239,6 +250,26 @@
         <div class="ref">
           <span class="ref-tag">Signal processing</span>
           <span><strong>Cho et al. (2018)</strong> — Instant Automated Inference of Perceived Mental Stress through Smartphone PPG and Thermal Imaging. <em>JMIR Mental Health</em>. Combined smartphone camera PPG with low-cost thermal camera for stress detection in 17 participants over 20-second measurements.</span>
+        </div>
+        <div class="ref">
+          <span class="ref-tag">PPG-glucose</span>
+          <span><strong>Chinchanikar & Dale (2025)</strong> — Multimodal Approach for Non-Invasive Blood Glucose Estimation Using Fingertip Video. <em>MMEP</em>. 243 subjects. Hybrid ResNet + handcrafted PPG features. R² = 0.88, MAE = 14.50 mg/dL. Bland-Altman >90% agreement with reference.</span>
+        </div>
+        <div class="ref">
+          <span class="ref-tag">PPG-glucose</span>
+          <span><strong>Raju et al. (2022)</strong> — SmartPPG-Glucose: non-invasive glucose from smartphone PPG. 93 subjects. DNN with MIC feature selection on 34 PPG features. R² = 0.96. Foundation for the PPG-to-glucose feature mapping used in MentalTap.</span>
+        </div>
+        <div class="ref">
+          <span class="ref-tag">PPG-glucose</span>
+          <span><strong>Sridevi et al. (2025)</strong> — Noninvasive estimation of blood glucose and HbA1c using Quantum Machine Learning. <em>Elsevier</em>. 136 subjects. Quantum SVM on 45 PPG features. 89.3% accuracy for glucose, 96.3% for HbA1c.</span>
+        </div>
+        <div class="ref">
+          <span class="ref-tag">Metabolic</span>
+          <span><strong>Wong et al. (2026)</strong> — Depressive symptom severity and metabolic disturbances in MDD and bipolar disorders: a systematic review and meta-analysis. <em>Journal of Affective Disorders</em>. 28 studies, 22,897 participants. Fasting glucose SMD = 0.30 in depression. Insulin resistance associated with anhedonia, sleep disturbances, and suicidal ideation.</span>
+        </div>
+        <div class="ref">
+          <span class="ref-tag">Multimodal</span>
+          <span><strong>Jin et al. (2017)</strong> — Diagnosis of MDD by combining multimodal information from heart rate dynamics and serum proteomics using machine-learning. <em>Progress in Neuro-Psychopharmacology & Biological Psychiatry</em>. HRV alone: 64% accuracy; HRV + metabolic proteomics: 80.1%. Demonstrates value of combining autonomic + metabolic biomarkers.</span>
         </div>
       </div>
     </details>

@@ -757,6 +757,16 @@ body {
   background: var(--accent-clinical-dim);
 }
 
+.glucose-card {
+  grid-column: 1 / -1;
+}
+
+.glucose-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}
+
 .results-divider {
   width: 100%;
   height: 1px;

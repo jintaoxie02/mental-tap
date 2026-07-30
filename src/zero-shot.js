@@ -5,7 +5,7 @@
  */
 
 import {
-  NORMS_SDNN, NORMS_RMSSD, NORMS_PNN50, NORMS_LFHF,
+  NORMS_SDNN, NORMS_RMSSD, NORMS_PNN50, NORMS_LFHF, NORMS_GLUCOSE,
   DISORDER_SIGNATURES, getAgeGroup,
 } from './normative-data.js';
 
@@ -34,23 +34,33 @@ function getNorm(normTable, age, sex) {
  * @param {'male'|'female'} sex - User's sex
  * @returns {object} Screening results with disorder matches and confidence levels
  */
-export function screenDisorders(hrv, age, sex) {
+export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
   const norms = {
     sdnn: getNorm(NORMS_SDNN, age, sex),
     rmssd: getNorm(NORMS_RMSSD, age, sex),
     pnn50: getNorm(NORMS_PNN50, age, sex),
     lfhfRatio: getNorm(NORMS_LFHF, age, sex),
-    // LF and HF approximate norms
     lfPower: { mean: 1200, sd: 800 },
     hfPower: { mean: 800, sd: 600 },
   };
 
-  // Compute z-scores for each HRV metric
+  // Add glucose norm if estimate available
+  let glucoseZ = null;
+  if (glucoseEstimate !== null && glucoseEstimate !== undefined) {
+    const glucoseNorm = getNorm(NORMS_GLUCOSE, age, sex);
+    glucoseZ = zScore(glucoseEstimate, glucoseNorm.mean, glucoseNorm.sd);
+  }
+
+  // Compute z-scores for each metric
   const zScores = {};
   for (const [metric, norm] of Object.entries(norms)) {
     if (hrv[metric] !== undefined) {
       zScores[metric] = zScore(hrv[metric], norm.mean, norm.sd);
     }
+  }
+  // Add glucose z-score as a synthetic feature
+  if (glucoseZ !== null) {
+    zScores.glucose = glucoseZ;
   }
 
   // Match against each disorder signature

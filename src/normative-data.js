@@ -78,10 +78,11 @@ export const DISORDER_SIGNATURES = [
       pnn50:   { direction: -1, weight: 0.43 },
       lfPower: { direction: -1, weight: 0.34 },
       hfPower: { direction: -1, weight: 0.51 },
-      lfhfRatio: { direction: 0, weight: 0.0 }, // LF/HF not significantly different in depression
+      lfhfRatio: { direction: 0, weight: 0.0 },
+      glucose: { direction: 1, weight: 0.35 }, // SMD=0.30 from Wong et al. (2026)
     },
     threshold: 1.0,
-    description: 'Reduced autonomic flexibility across all HRV domains, particularly SDNN (g = −0.87).',
+    description: 'Reduced HRV across all domains (especially SDNN, g = −0.87). Often with elevated fasting glucose (SMD = 0.30).',
   },
   {
     id: 'anxiety',
@@ -121,9 +122,10 @@ export const DISORDER_SIGNATURES = [
       lfPower: { direction: -1, weight: 0.20 },
       hfPower: { direction: -1, weight: 0.35 },
       lfhfRatio: { direction: 0, weight: 0.0 },
+      glucose: { direction: 1, weight: 0.30 }, // metabolic syndrome more common in BD
     },
     threshold: 0.9,
-    description: 'Mild HRV reduction. May normalize during euthymic states.',
+    description: 'Mild HRV reduction. May normalize during euthymic states. Metabolic disturbances (↑ glucose, ↑ triglycerides) common.',
   },
   {
     id: 'schizophrenia',
@@ -140,6 +142,17 @@ export const DISORDER_SIGNATURES = [
     description: 'Strong parasympathetic (RMSSD, HF) reduction. Strongest evidence in umbrella review.',
   },
 ];
+
+// Normative fasting glucose (mmol/L) by age
+export const NORMS_GLUCOSE = {
+  '18-24': { mean: 4.8, sd: 0.5 },
+  '25-34': { mean: 4.9, sd: 0.5 },
+  '35-44': { mean: 5.1, sd: 0.6 },
+  '45-54': { mean: 5.3, sd: 0.7 },
+  '55-64': { mean: 5.5, sd: 0.8 },
+  '65-74': { mean: 5.6, sd: 0.9 },
+  '75-90': { mean: 5.7, sd: 1.0 },
+};
 
 /**
  * Get age group bucket for the given age.

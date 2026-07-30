@@ -10,7 +10,9 @@ import { getCamera, startCapture, stopCamera } from './camera.js';
 import { createBandpassFilter } from './signal-filter.js';
 import { detectBeats } from './beat-detector.js';
 import { computeHRV } from './hrv-calculator.js';
+import { computeWaveformFeatures } from './waveform-features.js';
 import { screenDisorders } from './zero-shot.js';
+import { estimateGlucose } from './glucose-estimator.js';
 import { WaveformDisplay } from './waveform-display.js';
 import {
   showStep, updateTimer, updateBPM, updateProgress,
@@ -241,16 +243,22 @@ function finishRecording() {
 
     // Beat detection
     const times = new Float64Array(allTimestamps);
-    const { ibis, bpm } = detectBeats(filtered, times, 30);
+    const { beats, ibis, bpm } = detectBeats(filtered, times, 30);
 
     // HRV
     const hrv = computeHRV(ibis);
 
-    // Zero-shot screening
-    const { age, sex } = getAgeSex();
-    const screening = screenDisorders(hrv, age, sex);
+    // Pulse waveform features (for glucose estimation)
+    const waveformFeatures = computeWaveformFeatures(filtered, times, beats);
 
-    renderResults(hrv, screening, age, sex);
+    // Estimate glucose from PPG features
+    const glucose = estimateGlucose(hrv, waveformFeatures, bpm);
+
+    // Zero-shot screening with combined HRV + glucose
+    const { age, sex } = getAgeSex();
+    const screening = screenDisorders(hrv, age, sex, glucose.mmol);
+
+    renderResults(hrv, screening, age, sex, glucose);
     showStep('step-results');
   } catch (err) {
     console.error('Analysis error:', err);

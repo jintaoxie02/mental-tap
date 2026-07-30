@@ -93,7 +93,7 @@ export function updateProgress(percent) {
   if (el) el.style.width = `${Math.min(100, Math.max(0, percent))}%`;
 }
 
-export function renderResults(hrv, screening, age, sex) {
+export function renderResults(hrv, screening, age, sex, glucose = null) {
   // HRV metrics
   const metrics = [
     { id: 'sdnn', value: hrv.sdnn, unit: 'ms' },
@@ -111,6 +111,22 @@ export function renderResults(hrv, screening, age, sex) {
       const status = getMetricStatus(m.id, m.value, age, sex);
       statusEl.textContent = status.toUpperCase();
       statusEl.className = `metric-status ${status}`;
+    }
+  }
+
+  // Glucose estimate
+  if (glucose) {
+    const glucoseVal = document.getElementById('res-glucose');
+    const glucoseStatus = document.getElementById('res-glucose-status');
+    if (glucoseVal) glucoseVal.textContent = glucose.mmol.toFixed(1);
+    if (glucoseStatus) {
+      glucoseStatus.textContent = glucose.level.toUpperCase();
+      glucoseStatus.className = `metric-status ${glucose.level === 'normal' ? 'normal' : glucose.level === 'elevated' ? 'low' : 'high'}`;
+    }
+    // Glucose footnote
+    const glucoseNote = document.getElementById('glucose-note');
+    if (glucoseNote) {
+      glucoseNote.textContent = `≈ ${glucose.mgDl} mg/dL · ${glucose.label}`;
     }
   }
 
