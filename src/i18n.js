@@ -124,8 +124,8 @@ const STRINGS = {
   'zh-HK': {
     // Welcome
     'hero.title': 'MentalTap',
-    'hero.subtitle': '透過指尖，了解你嘅自律神經健康',
-    'hero.desc': '你嘅心率變異反映咗神經系統點樣回應外界。將手指放上鏡頭兩分鐘，所有數據唔會離開你部電話。',
+    'hero.subtitle': '指尖兩分鐘，睇下你嘅身體訊號',
+    'hero.desc': '你嘅心跳變化反映出身體點樣應對壓力同情緒。將手指放上鏡頭兩分鐘，所有數據唔會離開你部電話。',
     'hero.start': '開始測量',
     'hero.footnote': '唔使開account，所有運算喺裝置內完成\n呢個係篩查工具，唔係診斷',
 
@@ -147,41 +147,41 @@ const STRINGS = {
     'record.cancel': '取消',
 
     // Results
-    'results.title': '你嘅自律神經檔案',
-    'results.subtitle': '基於2分鐘指尖PPG記錄',
+    'results.title': '你嘅檢測結果',
+    'results.subtitle': '基於2分鐘指尖記錄',
     'results.screening_title': '篩查結果',
-    'results.screening_subtitle': '貝葉斯後驗概率，對比34,000+參與者嘅已發表疾病特徵：',
-    'results.sdnn_tip': '所有心跳間隔嘅標準差。反映整體自律神經靈活性 — 心臟整體變化幅度。數值愈高愈好。抑鬱症最強嘅HRV指標（meta-analysis g = −0.87）。',
-    'results.rmssd_tip': '相鄰心跳間隔差異嘅均方根。反映迷走神經（副交感/休息消化系統）對心跳嘅即時調控。RMSSD愈高 = 迷走神經張力愈強 = 壓力恢復能力愈好。',
-    'results.pnn50_tip': '相鄰心跳間隔差異超過50毫秒嘅比例。另一個副交感神經指標。pNN50偏低表示心臟缺乏即時調整能力，常見於焦慮同抑鬱。',
-    'results.lfhf_tip': '低頻功率（0.04–0.15 Hz）同高頻功率（0.15–0.40 Hz）嘅比率。粗略反映交感（戰鬥/逃跑）同副交感（休息/消化）嘅平衡。~1.5屬正常；>2.5表示交感主導（壓力/焦慮）；<1.0可能表示副交感撤退（抑鬱）。學術界對呢個比率有爭議 — 請謹慎解讀。',
-    'results.glucose_tip': '從PPG波形特徵估算嘅空腹血糖。基於已發表嘅PPG-血糖回歸模型（研究中R²高達0.96）。使用心率、HRV同動脈硬度特徵。呢個係篩查估算 — 唔等同指尖採血或化驗報告。正常空腹：<5.6 mmol/L（<100 mg/dL）。',
+    'results.screening_subtitle': '貝葉斯後驗概率，對比34,000+參與者嘅研究數據：',
+    'results.sdnn_tip': '所有心跳間隔嘅標準差。反映心臟整體嘅適應能力，數值愈高愈好。係咁多個HRV指標入面，同抑鬱症關聯最強嗰個（meta-analysis g = −0.87）。',
+    'results.rmssd_tip': '逐次心跳之間嘅變化幅度，由迷走神經控制。簡單嚟講：RMSSD愈高，你嘅身體恢復得愈快，壓力管理愈好。會隨年齡自然下降。',
+    'results.pnn50_tip': '相鄰心跳差距超過50毫秒嘅比例。又係一個睇迷走神經嘅指標。偏低代表心臟跳得比較「死板」，常見於長期壓力大或者情緒低落嘅人。',
+    'results.lfhf_tip': '交感神經（緊張mode）同副交感神經（放鬆mode）嘅比例。~1.5係正常；高過2.5代表身體偏緊張（壓力大/焦慮）；低過1.0可能係放鬆系統唔夠力（抑鬱）。學術界對呢個ratio有爭議，參考下就好。',
+    'results.glucose_tip': '從脈搏波形估算嘅空腹血糖。用咗心跳、HRV同血管硬度等特徵，參考已發表嘅PPG血糖研究（R²最高0.96）。正常空腹：<5.6 mmol/L（<100 mg/dL）；前期：5.6–6.9；偏高：≥7.0。呢個係估算，唔係驗血。',
     'results.metrics_explain': '呢啲指標代表咩意思？',
     'results.calc_explain': '點樣計算出嚟？',
     'results.refs': '學術參考文獻',
-    'results.disclaimer': '呢個係實驗性篩查工具，唔係臨床診斷。數據基於已發表嘅心率變異同心理健康研究。請諮詢醫護人員作正式評估。',
+    'results.disclaimer': '<strong>注意：</strong>呢個係實驗性篩查工具，唔係臨床診斷。數據基於已發表嘅心率變異同心理健康研究。請諮詢醫護人員作正式評估。',
     'results.retake': '重新測量',
-    'results.all_low': '所有後驗概率都接近或低於人口基線 — 你嘅自律神經模式未顯示任何已篩查狀況嘅風險升高。呢個結果唔排除精神健康狀況嘅可能性。',
+    'results.all_low': '所有後驗概率都接近或低於人口基線 — 你嘅數據同一般人差唔多，未見任何已篩查狀況嘅風險升高。當然，呢個唔代表一定冇問題。',
 
     // Explainers
     'explain.metrics': `
-      <p><strong>SDNN</strong> — 總心率變異。可以理解為心臟嘅整體適應能力。運動員同健康年輕人嘅SDNN通常>50ms。低於30ms值得關注。係研究文獻中最強嘅抑鬱症HRV指標。</p>
-      <p><strong>RMSSD</strong> — 短期、逐次心跳嘅變化，由迷走神經控制。呢條神經係副交感神經系統嘅主要通道 — 佢會減慢心跳、令身體平靜、幫助你從壓力中恢復。RMSSD會隨年齡自然下降。</p>
-      <p><strong>pNN50</strong> — 心臟作出有意義嘅逐次調整（>50ms）嘅頻率。RMSSD嘅補充指標。pNN50偏低表示心臟缺乏即時調整，可能反映長期壓力或自律神經僵硬。</p>
-      <p><strong>LF/HF</strong> — 交感（「啟動」）同副交感（「減速」）系統之間嘅平衡。呢個比率最有用係檢測交感過度活躍（焦慮、PTSD）。佢<em>唔係</em>可靠嘅抑鬱指標 — 好多抑鬱患者嘅LF/HF比率正常。每個頻段嘅絕對功率（LF power、HF power）通常比比率更有參考價值。</p>
-      <p><strong>血糖（估算）</strong> — 從PPG波形特徵估算嘅空腹血糖，使用心率、HRV同動脈硬度指數。基於已發表嘅PPG-血糖研究（R²高達0.96）校正嘅多特徵線性模型。正常空腹：&lt;5.6 mmol/L（&lt;100 mg/dL）；糖尿病前期：5.6–6.9；糖尿病：≥7.0。<em>呢個係篩查估算，唔可以替代血液檢測。</em></p>
-      <p><strong>狀態標籤</strong>（偏低 / 正常 / 偏高）係將你嘅數值對比同年齡同性別嘅人口標準（來自13,000+健康參與者嘅研究）。「偏低」表示低於你人口組別平均值1.5個標準差以上。</p>
+      <p><strong>SDNN</strong> — 心臟整體變化幅度。想像下你嘅心臟有幾「識變通」：運動員同健康年輕人通常>50ms，低過30ms就要留意。係研究入面同抑鬱症關聯最強嘅HRV指標。</p>
+      <p><strong>RMSSD</strong> — 逐次心跳之间嘅微調，由迷走神经控制。呢條神经幫你放鬆、減慢心跳、喺壓力之後恢復。RMSSD愈高 = 恢復得愈快。會隨年齡自然跌。</p>
+      <p><strong>pNN50</strong> — 心臟有幾經常作出大過50ms嘅即時調整。RMSSD嘅另一個角度。偏低代表心跳比較「死板」，可能係長期壓力大或者情緒緊張嘅表現。</p>
+      <p><strong>LF/HF</strong> — 緊張mode（交感）同放鬆mode（副交感）嘅比例。最有用的係睇吓係咪長期偏緊張（焦慮、PTSD）。<em>唔好</em>用嚟判斷抑鬱 — 好多抑鬱嘅人LF/HF都正常。分開睇LF同HF各自嘅數值通常更有用。</p>
+      <p><strong>血糖（估算）</strong> — 從脈搏波形推算嘅空腹血糖，參考咗心跳、HRV同血管硬度。基於已發表嘅PPG血糖研究（R²最高0.96）。正常：&lt;5.6 mmol/L（&lt;100 mg/dL）；前期：5.6–6.9；偏高：≥7.0。<em>係估算，唔可以代替篤手指或者抽血。</em></p>
+      <p><strong>狀態標籤</strong>（偏低 / 正常 / 偏高）係將你嘅數值對比同年齡同性別嘅general population（13,000+人嘅研究數據）。「偏低」即係低過你嗰個年齡性別組別嘅平均值1.5個標準差。</p>
     `,
     'explain.calc': `
-      <p><strong>貝葉斯概率估計</strong> — 使用Naive Bayes模型。<em>先驗概率</em>係人口患病率（例如抑鬱症~5%）。每個HRV同血糖特徵貢獻一個<em>貝葉斯因子</em>：你嘅數值喺疾病分佈之下比健康分佈之下有幾大可能，使用meta-analysis嘅效應量（Hedges' g）嚟偏移疾病分佈。貝葉斯定理將先驗概率同所有特徵似然度結合，產生<em>後驗概率</em> — P（疾病 | 你嘅數據）。已發表嘅多模態研究確認結合HRV同代謝標記可將準確度從~64%提升至~80%（Jin et al., 2017）。</p>
-      <p>每種狀況都有已知嘅「自律神經特徵」— 基於已發表meta-analyses，邊啲HRV指標通常降低或升高：</p>
-      <p><strong>抑鬱症</strong> — 全面HRV降低。SDNN通常最受影響（g = −0.87）。RMSSD同HF功率中度降低（g ≈ −0.51）。LF/HF比率通常正常。來源：Wu et al.（2023），43項研究嘅meta-analysis。</p>
-      <p><strong>焦慮症（GAD）</strong> — 輕度至中度HRV降低，尤其係副交感指標（RMSSD、HF）。有啲交感主導（↑ LF/HF）。比抑鬱症輕微。</p>
-      <p><strong>PTSD</strong> — 全面HRV降低，可能伴隨交感主導。2025年umbrella review（Translational Psychiatry, Nature）中較強嘅HRV-精神科關聯之一。</p>
-      <p><strong>躁鬱症</strong> — 輕度HRV降低。喺穩定（euthymic）期可能恢復正常。比單相抑鬱更弱同更唔一致。</p>
-      <p><strong>思覺失調</strong> — 強烈嘅副交感降低（↓↓ RMSSD、↓↓ HF）。umbrella review中所有精神科狀況中最強嘅HRV發現。</p>
-      <p><strong>HRV + 血糖結合方法</strong> — 篩查同時使用自律神經（HRV）同代謝（估算血糖）生物標記。已發表嘅多模態研究顯示結合模式可顯著提高診斷準確度：單靠HRV對MDD分類達到~64%準確度，但結合HRV同代謝標記達到~80%（Jin et al., 2017, <em>Progress in Neuro-Psychopharmacology & Biological Psychiatry</em>）。</p>
-      <p>顯示嘅百分比係貝葉斯後驗概率。人口基線同時顯示作參考。<strong>呢個係篩查估算，唔係臨床診斷。</strong></p>
+      <p><strong>貝葉斯概率</strong> — 用咗Naive Bayes模型。出發點係<em>人口患病率</em>（例如抑鬱症大約5%嘅人有）。然後你嘅每個HRV同血糖數據會貢獻一個<em>似然比</em>：你呢個數值，喺「有呢個病」嘅人入面常見啲，定係「冇病」嘅人入面常見啲？用meta-analysis嘅效應量（Hedges' g）嚟推算。最後用貝葉斯定理將所有證據加埋，得出<em>後驗概率</em>。已發表研究顯示，HRV加埋代謝指標一齊睇，準確度可以由~64%跳到~80%（Jin et al., 2017）。</p>
+      <p>每種狀況都有佢嘅「心跳特徵」— 即係邊啲HRV指標通常會高咗定低咗，數據嚟自meta-analyses：</p>
+      <p><strong>抑鬱症</strong> — 大部分HRV指標都偏低。SDNN跌得最明顯（g = −0.87）。RMSSD同HF都中度偏低（g ≈ −0.51）。LF/HF通常正常。來源：Wu et al.（2023），綜合43項研究。</p>
+      <p><strong>焦慮症（GAD）</strong> — 輕度至中度HRV偏低，尤其係放鬆相關嘅指標（RMSSD、HF）。有少少緊張mode主導（↑ LF/HF）。整體嚟講比抑鬱症輕微。</p>
+      <p><strong>PTSD</strong> — 大部分HRV指標都偏低，通常伴隨緊張mode主導。係2025年umbrella review（Translational Psychiatry, Nature）入面最強嘅HRV-精神科關聯之一。</p>
+      <p><strong>躁鬱症</strong> — 輕度HRV偏低。情緒穩定嗰排可能恢復正常。比單相抑鬱更弱、更唔一致。</p>
+      <p><strong>思覺失調</strong> — 放鬆系統跌得好明顯（↓↓ RMSSD、↓↓ HF）。係umbrella review入面咁多個精神科狀況之中，HRV變化最強嗰個。</p>
+      <p><strong>HRV + 血糖點解要一齊睇？</strong> — HRV反映神經系統，血糖反映代謝系統，兩個系統其實互相影響。已發表研究顯示分開睇嘅話，HRV自己得~64%準確度，加埋代謝指標上到~80%（Jin et al., 2017）。</p>
+      <p>顯示嘅%係貝葉斯後驗概率，隔離有人口基線俾你對比。<strong>係篩查估算，唔係臨床診斷。</strong></p>
     `,
 
     // References (same as English — academic citations stay in English)
@@ -203,15 +203,15 @@ const STRINGS = {
     'ref.multimodal_jin': '<strong>Jin et al. (2017)</strong> — Diagnosis of MDD combining HRV and serum proteomics. <em>Prog Neuro-Psychopharm Biol Psych</em>. 64%→80.1% accuracy.',
 
     // Reference tags (Cantonese)
-    'tag.hrv_norms': 'HRV標準',
-    'tag.all_disorders': '所有疾病',
+    'tag.hrv_norms': 'HRV基準',
+    'tag.all_disorders': '綜合回顧',
     'tag.depression': '抑鬱症',
     'tag.smartphone_ppg': '手機PPG',
     'tag.pulse_waveform': '脈搏波形',
-    'tag.suicidal_ideation': '自殺意念',
+    'tag.suicidal_ideation': '自殺風險',
     'tag.wearable_ppg': '穿戴式PPG',
-    'tag.multi_disorder': '多疾病',
-    'tag.signal_processing': '信號處理',
+    'tag.multi_disorder': '多疾病分類',
+    'tag.signal_processing': '訊號處理',
     'tag.ppg_glucose': 'PPG血糖',
     'tag.metabolic': '代謝',
     'tag.multimodal': '多模態',
@@ -219,20 +219,20 @@ const STRINGS = {
     // Errors
     'error.title': '出現問題',
     'error.retry': '再試一次',
-    'error.no_data': '數據不足。請保持指尖穩定完成全程。',
-    'error.analysis_failed': '分析失敗。請保持指尖穩定再試一次。',
-    'error.camera_denied': '鏡頭權限被拒絕。請允許鏡頭存取再試。',
+    'error.no_data': '數據唔夠。請保持指尖穩定，完成全程。',
+    'error.analysis_failed': '分析失敗。請保持指尖穩定，再試一次。',
+    'error.camera_denied': '鏡頭權限被拒絕。請允許鏡頭存取，再試一次。',
     'error.camera_not_found': '搵唔到鏡頭。呢個app需要後置鏡頭。',
     'error.camera_in_use': '鏡頭正被其他app使用。請關閉其他app再試。',
     'error.camera_unavailable': '鏡頭無法使用',
-    'error.signal_failed': '信號處理錯誤。請確保指尖完全遮蓋鏡頭同閃光燈，然後再試。',
+    'error.signal_failed': '訊號處理出錯。請確保指尖完全遮蓋鏡頭同閃光燈，然後再試。',
 
     // Disorder descriptions
-    'disorder.depression': '全面HRV降低（尤其SDNN, g = −0.87），常伴隨空腹血糖升高（SMD = 0.30）',
-    'disorder.anxiety': '輕度至中度HRV降低，尤其副交感指標（RMSSD、HF）',
-    'disorder.ptsd': '全面HRV降低，umbrella review中最強嘅HRV-精神科關聯之一',
-    'disorder.bipolar': '輕度HRV降低，穩定狀態下可能恢復正常。代謝異常（↑血糖、↑三酸甘油酯）常見',
-    'disorder.schizophrenia': '強烈副交感降低（↓↓ RMSSD、↓↓ HF），umbrella review中最強嘅發現',
+    'disorder.depression': '心跳變化大幅減少（尤其SDNN, g = −0.87），常伴隨空腹血糖偏高（SMD = 0.30）',
+    'disorder.anxiety': '心跳變化輕度至中度減少，尤其放鬆相關指標（RMSSD、HF）',
+    'disorder.ptsd': '心跳變化全面減少，係umbrella review入面最強嘅HRV-精神科關聯之一',
+    'disorder.bipolar': '心跳變化輕度減少，情緒穩定時可能恢復正常。代謝異常（血糖同三酸甘油酯偏高）常見',
+    'disorder.schizophrenia': '放鬆系統明顯減弱（↓↓ RMSSD、↓↓ HF），係umbrella review入面最強嘅發現',
 
     // Language switcher
     'lang.switch': 'English',
