@@ -130,48 +130,42 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
     }
   }
 
-  // Screening results
+  // Screening results — always show all conditions with probabilities
   const listEl = document.getElementById('screening-results');
   if (!listEl) return;
 
   listEl.innerHTML = '';
 
-  const flaggedCount = screening.results.filter(r => r.level !== 'low').length;
+  for (const r of screening.results) {
+    const item = document.createElement('div');
+    item.className = 'screening-item';
 
-  if (flaggedCount === 0) {
-    listEl.innerHTML = `
-      <div class="screening-item">
-        <span class="screening-name">No significant autonomic deviations detected</span>
-        <span class="screening-confidence low">Normal</span>
+    const probDisplay = r.insufficientData
+      ? 'N/A'
+      : `${r.probability}%`;
+
+    const priorInfo = r.insufficientData
+      ? ''
+      : `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">Population: ${r.prior}% → Posterior: ${r.probability}%</div>`;
+
+    item.innerHTML = `
+      <div>
+        <span class="screening-name">${r.name}</span>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${r.description}</div>
+        ${priorInfo}
       </div>
-      <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-top: 8px;">
-        Your HRV pattern is within normal range for your age and sex.
-        This does not rule out mental health conditions — HRV is just one biomarker.
-      </p>
+      <span class="screening-confidence ${r.level}">${r.level === 'high' ? '⚠ ' : ''}${probDisplay}</span>
     `;
-  } else {
-    for (const r of screening.results) {
-      const item = document.createElement('div');
-      item.className = 'screening-item';
+    listEl.appendChild(item);
+  }
 
-      const probDisplay = r.insufficientData
-        ? 'N/A'
-        : `${r.probability}%`;
-
-      const priorInfo = r.insufficientData
-        ? ''
-        : `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">Population: ${r.prior}% → Posterior: ${r.probability}%</div>`;
-
-      item.innerHTML = `
-        <div>
-          <span class="screening-name">${r.name}</span>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${r.description}</div>
-          ${priorInfo}
-        </div>
-        <span class="screening-confidence ${r.level}">${r.level === 'high' ? '⚠ ' : ''}${probDisplay}</span>
-      `;
-      listEl.appendChild(item);
-    }
+  // Note when all probabilities are at or below population baseline
+  const allLow = screening.results.every(r => r.level === 'low');
+  if (allLow) {
+    const note = document.createElement('p');
+    note.style.cssText = 'color: var(--text-muted); font-size: 0.82rem; text-align: center; margin-top: var(--space-md);';
+    note.textContent = 'All posterior probabilities are at or near population baseline — your autonomic profile does not suggest elevated risk for any screened condition. This does not rule out mental health conditions.';
+    listEl.appendChild(note);
   }
 }
 
