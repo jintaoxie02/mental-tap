@@ -590,6 +590,50 @@ body {
   font-style: normal;
 }
 
+/* ---- References list ---- */
+.references-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ref {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.ref-tag {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-glow);
+  background: var(--accent-glow-dim);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  min-width: 90px;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.ref span:last-child {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.ref strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ref em {
+  color: var(--accent-clinical);
+  font-style: italic;
+}
+
 /* ---- Tap-to-start overlay ---- */
 .tap-overlay {
   position: absolute;
