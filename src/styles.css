@@ -503,6 +503,93 @@ body {
   text-align: center;
 }
 
+/* ---- Metric tooltips ---- */
+.metric-tooltip {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: help;
+  margin-left: 2px;
+  font-style: normal;
+  transition: color var(--duration-fast);
+  position: relative;
+}
+
+.metric-tooltip:hover {
+  color: var(--accent-clinical);
+}
+
+.metric-tooltip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.55;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  white-space: normal;
+  width: 260px;
+  z-index: 100;
+  pointer-events: none;
+  text-align: left;
+}
+
+/* ---- Metrics explainer (collapsible) ---- */
+.metrics-explainer {
+  width: 100%;
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.metrics-explainer summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-sm) 0;
+  user-select: none;
+  transition: color var(--duration-fast);
+}
+
+.metrics-explainer summary:hover {
+  color: var(--text-secondary);
+}
+
+.explainer-content {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-sm);
+}
+
+.explainer-content p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-sm);
+}
+
+.explainer-content p:last-child {
+  margin-bottom: 0;
+}
+
+.explainer-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.explainer-content em {
+  color: var(--accent-glow);
+  font-style: normal;
+}
+
 /* ---- Tap-to-start overlay ---- */
 .tap-overlay {
   position: absolute;

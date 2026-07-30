@@ -127,39 +127,71 @@
 
     <div class="metrics-grid">
       <div class="metric-card">
-        <span class="metric-label">SDNN</span>
+        <span class="metric-label">SDNN
+          <span class="metric-tooltip" data-tip="Standard deviation of all heartbeat intervals. Measures total autonomic flexibility — how much your heart rate varies overall. Higher is generally better. The strongest HRV marker for depression (g = −0.87 in meta-analyses).">ⓘ</span>
+        </span>
         <span id="res-sdnn" class="metric-value">--</span>
         <span class="metric-unit">ms</span>
         <span id="res-sdnn-status" class="metric-status"></span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">RMSSD</span>
+        <span class="metric-label">RMSSD
+          <span class="metric-tooltip" data-tip="Root Mean Square of Successive Differences. Reflects beat-to-beat changes driven by the vagus nerve (parasympathetic / rest-and-digest system). Higher RMSSD = stronger vagal tone = better stress recovery.">ⓘ</span>
+        </span>
         <span id="res-rmssd" class="metric-value">--</span>
         <span class="metric-unit">ms</span>
         <span id="res-rmssd-status" class="metric-status"></span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">pNN50</span>
+        <span class="metric-label">pNN50
+          <span class="metric-tooltip" data-tip="Percentage of consecutive heartbeats that differ by more than 50 milliseconds. Another vagal/parasympathetic measure. Lower pNN50 indicates less moment-to-moment heart rate flexibility, often seen in anxiety and depression.">ⓘ</span>
+        </span>
         <span id="res-pnn50" class="metric-value">--</span>
         <span class="metric-unit">%</span>
         <span id="res-pnn50-status" class="metric-status"></span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">LF/HF</span>
+        <span class="metric-label">LF/HF
+          <span class="metric-tooltip" data-tip="Ratio of Low-Frequency (0.04–0.15 Hz) to High-Frequency (0.15–0.40 Hz) heart rate power. Roughly reflects sympathetic (fight/flight) vs parasympathetic (rest/digest) balance. ~1.5 is normal; >2.5 suggests sympathetic dominance (stress/anxiety); <1.0 may indicate parasympathetic withdrawal (depression). This ratio is debated in research — interpret with caution.">ⓘ</span>
+        </span>
         <span id="res-lfhfRatio" class="metric-value">--</span>
         <span class="metric-unit">ratio</span>
         <span id="res-lfhf-status" class="metric-status"></span>
       </div>
     </div>
 
+    <details class="metrics-explainer">
+      <summary>What do these metrics mean?</summary>
+      <div class="explainer-content">
+        <p><strong>SDNN</strong> — Total heart rate variability. Think of it as your heart's overall adaptability. Athletes and healthy young adults often have SDNN > 50ms. Values below 30ms warrant attention. This is the strongest HRV marker for depression in research literature.</p>
+        <p><strong>RMSSD</strong> — Short-term, beat-to-beat variability controlled by your vagus nerve. This nerve is the main highway of your parasympathetic nervous system — it slows your heart, calms your body, and helps you recover from stress. RMSSD naturally declines with age.</p>
+        <p><strong>pNN50</strong> — How often your heart makes meaningful beat-to-beat adjustments (>50ms). A complementary measure to RMSSD. If pNN50 is low, your heart isn't making many moment-to-moment adjustments, which can indicate chronic stress or autonomic rigidity.</p>
+        <p><strong>LF/HF</strong> — The balance between your sympathetic ("go") and parasympathetic ("slow") systems. This ratio is most useful for detecting sympathetic overdrive (anxiety, PTSD). It is <em>not</em> a reliable depression marker — many depressed individuals have normal LF/HF ratios. The absolute power in each band (LF power, HF power) is often more informative than the ratio.</p>
+        <p><strong>Status labels</strong> (LOW / NORMAL / HIGH) compare your value against age- and sex-matched population norms from studies of 13,000+ healthy participants. "Low" means more than 1.5 standard deviations below the norm for your demographic.</p>
+      </div>
+    </details>
+
     <div class="results-divider"></div>
 
     <h3 class="screening-title">Screening Results</h3>
-    <p class="screening-subtitle">Autonomic patterns associated with:</p>
+    <p class="screening-subtitle">Autonomic patterns compared against known disorder signatures from meta-analyses covering 34,000+ participants:</p>
 
     <div id="screening-results" class="screening-list">
       <!-- Populated by JS -->
     </div>
+
+    <details class="metrics-explainer">
+      <summary>How are these calculated?</summary>
+      <div class="explainer-content">
+        <p>Each condition has a known "autonomic signature" — a pattern of which HRV metrics are typically reduced or elevated, based on published meta-analyses:</p>
+        <p><strong>Depression</strong> — Broad HRV reduction. SDNN is typically most affected (g = −0.87). RMSSD and HF power moderately reduced (g ≈ −0.51). LF/HF ratio usually normal. Source: Wu et al. (2023), meta-analysis of 43 studies.</p>
+        <p><strong>Anxiety (GAD)</strong> — Mild to moderate HRV reduction, particularly in parasympathetic indices (RMSSD, HF). Some sympathetic dominance (↑ LF/HF). Less pronounced than depression.</p>
+        <p><strong>PTSD</strong> — Broad HRV reduction with possible sympathetic dominance. One of the stronger HRV-psychiatric associations in the 2025 umbrella review (Translational Psychiatry, Nature).</p>
+        <p><strong>Bipolar Disorder</strong> — Mild HRV reduction. May normalize during stable (euthymic) periods. Weaker and less consistent than unipolar depression.</p>
+        <p><strong>Schizophrenia</strong> — Strong parasympathetic reduction (↓↓ RMSSD, ↓↓ HF). The most robust HRV finding across all psychiatric conditions in the umbrella review.</p>
+        <p>The confidence percentage reflects how many standard deviations your HRV pattern deviates from age/sex norms, weighted by each feature's importance for that condition. <strong>This is a screening signal, not a probability of having the condition.</strong></p>
+      </div>
+    </details>
 
     <div class="disclaimer">
       <strong>Important:</strong> This is an experimental screening tool, not a clinical diagnosis.
