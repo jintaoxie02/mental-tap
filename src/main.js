@@ -92,6 +92,7 @@ function beginCapture() {
   let recentVals = [];
   let recentTimes = [];
   let lastPeakTs = 0;
+  let prevPeakTs = 0;
   let bpmHistory = [];
 
   stopCapture = startCapture(track, (greenValue, timestamp) => {
@@ -136,7 +137,6 @@ function beginCapture() {
       // Threshold: 0.4 std below mean (dips = blood absorbs green light)
       const threshold = dMean - dStd * 0.4;
 
-      let peakCount = 0;
       let beatDetected = false;
       for (let i = 1; i < n - 1; i++) {
         const ts = recentTimes[i];
@@ -144,23 +144,27 @@ function beginCapture() {
             detrended[i] < detrended[i - 1] &&
             detrended[i] <= detrended[i + 1] &&
             ts - lastPeakTs > 400) { // refractory: 400ms
-          peakCount++;
-          beatDetected = true;
+          // Compute instantaneous BPM from the previous beat interval
+          if (prevPeakTs > 0 && lastPeakTs > 0) {
+            const ibi = lastPeakTs - prevPeakTs;
+            if (ibi >= 300 && ibi <= 2000) {
+              const instantBpm = Math.round(60000 / ibi);
+              if (instantBpm >= 40 && instantBpm <= 180) {
+                bpmHistory.push(instantBpm);
+                if (bpmHistory.length > 8) bpmHistory.shift();
+                updateBPM(Math.round(bpmHistory.reduce((a, b) => a + b, 0) / bpmHistory.length));
+              }
+            }
+          }
+          prevPeakTs = lastPeakTs;
           lastPeakTs = ts;
+          beatDetected = true;
         }
       }
 
       if (beatDetected) {
         waveform.markBeat();
         triggerBeatVisual();
-      }
-      if (peakCount > 0) {
-        const bpm = Math.round(peakCount * 12); // peaks in 5s → peaks/min
-        if (bpm >= 40 && bpm <= 180) {
-          bpmHistory.push(bpm);
-          if (bpmHistory.length > 5) bpmHistory.shift();
-          updateBPM(Math.round(bpmHistory.reduce((a, b) => a + b, 0) / bpmHistory.length));
-        }
       }
     }
   });
