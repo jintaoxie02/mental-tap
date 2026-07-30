@@ -1,7 +1,9 @@
 /**
  * MentalTap — Main entry point.
- * Camera → PPG → live waveform + BPM → final HRV → zero-shot screening.
- * All processing on main thread. Heavy HRV/FFT only at end of recording.
+ * Two-phase start:
+ *   1. Setup: getUserMedia → store stream
+ *   2. Recording: user taps overlay → video.play() in gesture context → capture
+ * All heavy analysis (HRV/FFT) runs only at end, not during recording.
  */
 
 import { getCamera, startCapture, stopCamera } from './camera.js';
@@ -17,8 +19,7 @@ import {
   setButtonEnabled, getAgeSex,
 } from './ui.js';
 
-// ---- Constants ----
-const RECORDING_DURATION = 120; // seconds
+const RECORDING_DURATION = 120;
 
 // ---- State ----
 let stream = null;
@@ -28,36 +29,28 @@ let ppgExtractor = null;
 let waveform = null;
 let recordingTimer = null;
 let secondsRemaining = RECORDING_DURATION;
-
-// Accumulate all PPG data during recording for final analysis
 let allTimestamps = [];
 let allGreenValues = [];
 
 // ---- DOM ----
-const btnStart = document.getElementById('btn-start');
-const btnReady = document.getElementById('btn-ready');
-const btnCancel = document.getElementById('btn-cancel');
-const btnRetake = document.getElementById('btn-retake');
-const btnRetry = document.getElementById('btn-retry');
 const waveformCanvas = document.getElementById('waveform-canvas');
+const tapOverlay = document.getElementById('tap-overlay');
 
-// ---- Init ----
 waveform = new WaveformDisplay(waveformCanvas);
 showStep('step-welcome');
 
-btnStart.addEventListener('click', () => showStep('step-setup'));
-btnReady.addEventListener('click', () => startRecording());
-btnCancel.addEventListener('click', () => cancelRecording());
-btnRetake.addEventListener('click', () => showStep('step-setup'));
-btnRetry.addEventListener('click', () => showStep('step-setup'));
+document.getElementById('btn-start').addEventListener('click', () => showStep('step-setup'));
+document.getElementById('btn-ready').addEventListener('click', () => setupCamera());
+document.getElementById('btn-cancel').addEventListener('click', () => cancelRecording());
+document.getElementById('btn-retake').addEventListener('click', () => showStep('step-setup'));
+document.getElementById('btn-retry').addEventListener('click', () => showStep('step-setup'));
 
-// ---- Recording ----
-async function startRecording() {
+// ---- Phase 1: Get camera permission (user gesture #1) ----
+async function setupCamera() {
   try {
     setButtonEnabled('btn-ready', false);
     showSetupError('');
 
-    // Get camera
     const camera = await getCamera();
     stream = camera.stream;
     track = camera.track;
@@ -66,97 +59,98 @@ async function startRecording() {
       throw new Error('Camera not available');
     }
 
-    // Init
-    ppgExtractor = createPPGExtractor();
-    allTimestamps = [];
-    allGreenValues = [];
-
-    // Transition to recording
+    // Transition to recording screen — show tap overlay
     showStep('step-recording');
+    tapOverlay.classList.remove('hidden');
+    waveform.clear();
     secondsRemaining = RECORDING_DURATION;
     updateTimer(secondsRemaining);
     updateBPM(0);
     updateProgress(0);
 
-    // Quick BPM tracker — simple peak counter on recent window
-    let recentVals = [];
-    let lastPeakTime = 0;
-    let bpmHistory = [];
-
-    // Start frame capture
-    stopCapture = startCapture(track, (greenValue, timestamp) => {
-      // Store for final analysis
-      allGreenValues.push(greenValue);
-      allTimestamps.push(timestamp);
-
-      // Keep buffers bounded
-      if (allGreenValues.length > 7200) {
-        allGreenValues = allGreenValues.slice(-5400);
-        allTimestamps = allTimestamps.slice(-5400);
-      }
-
-      // Feed PPG extractor for live waveform
-      const result = ppgExtractor.add(greenValue, timestamp);
-      if (result) {
-        // Push recent ~1s of signal to waveform display
-        const dispLen = Math.min(30, result.signal.length);
-        for (let i = result.signal.length - dispLen; i < result.signal.length; i++) {
-          waveform.push(result.signal[i]);
-        }
-      }
-
-      // Quick BPM: count peaks in green values over ~5s window
-      recentVals.push(greenValue);
-      if (recentVals.length > 180) recentVals = recentVals.slice(-180);
-
-      if (recentVals.length >= 90) {
-        const avg = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
-        const threshold = avg * 1.002; // slight above mean = heartbeat candidate
-        let peakCount = 0;
-        for (let i = 1; i < recentVals.length - 1; i++) {
-          if (recentVals[i] > threshold &&
-              recentVals[i] > recentVals[i - 1] &&
-              recentVals[i] >= recentVals[i + 1]) {
-            // Refractory check: ~0.4s at 30fps = 12 frames
-            if (i - lastPeakTime > 12) {
-              peakCount++;
-              lastPeakTime = i;
-            }
-          }
-        }
-
-        if (peakCount > 0) {
-          const bpm = Math.round(peakCount * 12); // peaks in 5s → peaks/min
-          if (bpm >= 40 && bpm <= 180) {
-            bpmHistory.push(bpm);
-            if (bpmHistory.length > 5) bpmHistory.shift();
-            const avgBpm = Math.round(bpmHistory.reduce((a, b) => a + b, 0) / bpmHistory.length);
-            updateBPM(avgBpm);
-          }
-        }
-      }
-    });
-
-    // Timer
-    recordingTimer = setInterval(() => {
-      secondsRemaining--;
-      updateTimer(secondsRemaining);
-      updateProgress(((RECORDING_DURATION - secondsRemaining) / RECORDING_DURATION) * 100);
-
-      if (secondsRemaining <= 0) finishRecording();
-    }, 1000);
+    // Wait for user tap on overlay (user gesture #2 for video.play)
+    tapOverlay.onclick = () => beginCapture();
 
   } catch (err) {
-    console.error('Recording error:', err);
+    console.error('Setup error:', err);
     let msg = err.message || 'Camera access failed.';
-    if (err.name === 'NotAllowedError') msg = 'Camera permission denied. Please allow camera access and try again.';
-    else if (err.name === 'NotFoundError') msg = 'No camera found. This app requires a rear camera.';
-    else if (err.name === 'NotReadableError') msg = 'Camera is in use by another app. Close other apps and try again.';
+    if (err.name === 'NotAllowedError') msg = 'Camera permission denied. Allow camera access and try again.';
+    else if (err.name === 'NotFoundError') msg = 'No rear camera found.';
     showSetupError(msg);
     setButtonEnabled('btn-ready', true);
   }
 }
 
+// ---- Phase 2: Start capture (user gesture #2 — preserves autoplay permission) ----
+function beginCapture() {
+  tapOverlay.classList.add('hidden');
+
+  ppgExtractor = createPPGExtractor();
+  allTimestamps = [];
+  allGreenValues = [];
+
+  // Quick BPM state
+  let recentVals = [];
+  let lastPeakTime = 0;
+  let bpmHistory = [];
+
+  // Start frame capture — video.play() happens inside startCapture(),
+  // now within a fresh user gesture context
+  stopCapture = startCapture(track, (greenValue, timestamp) => {
+    allGreenValues.push(greenValue);
+    allTimestamps.push(timestamp);
+
+    if (allGreenValues.length > 7200) {
+      allGreenValues = allGreenValues.slice(-5400);
+      allTimestamps = allTimestamps.slice(-5400);
+    }
+
+    // Waveform display — only push every few frames to avoid overload
+    const result = ppgExtractor.add(greenValue, timestamp);
+    if (result && allGreenValues.length % 3 === 0) {
+      // Push just the latest value (smoothed)
+      const sig = result.signal;
+      waveform.push(sig[sig.length - 1]);
+    }
+
+    // Quick BPM from green value peaks (lightweight)
+    recentVals.push(greenValue);
+    if (recentVals.length > 180) recentVals = recentVals.slice(-180);
+
+    if (recentVals.length >= 90) {
+      const avg = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
+      const threshold = avg * 1.002;
+      let peakCount = 0;
+      for (let i = 1; i < recentVals.length - 1; i++) {
+        if (recentVals[i] > threshold &&
+            recentVals[i] > recentVals[i - 1] &&
+            recentVals[i] >= recentVals[i + 1] &&
+            i - lastPeakTime > 12) {
+          peakCount++;
+          lastPeakTime = i;
+        }
+      }
+      if (peakCount > 0) {
+        const bpm = Math.round(peakCount * 12);
+        if (bpm >= 40 && bpm <= 180) {
+          bpmHistory.push(bpm);
+          if (bpmHistory.length > 5) bpmHistory.shift();
+          updateBPM(Math.round(bpmHistory.reduce((a, b) => a + b, 0) / bpmHistory.length));
+        }
+      }
+    }
+  });
+
+  // Timer
+  recordingTimer = setInterval(() => {
+    secondsRemaining--;
+    updateTimer(secondsRemaining);
+    updateProgress(((RECORDING_DURATION - secondsRemaining) / RECORDING_DURATION) * 100);
+    if (secondsRemaining <= 0) finishRecording();
+  }, 1000);
+}
+
+// ---- Analysis (runs once at end) ----
 function finishRecording() {
   clearInterval(recordingTimer);
   recordingTimer = null;
@@ -164,21 +158,19 @@ function finishRecording() {
   if (stopCapture) { stopCapture(); stopCapture = null; }
   if (stream) { stopCamera(stream); stream = null; track = null; }
 
-  // ---- Full analysis of accumulated data ----
-  if (allGreenValues.length < 180) { // need at least 6s
-    showError('Not enough data. Keep your fingertip steady on the camera for the full 2 minutes.');
+  if (allGreenValues.length < 180) {
+    showError('Not enough data. Keep your fingertip steady for the full duration.');
     cleanup();
     return;
   }
 
   try {
-    // Build full PPG signal
+    // Build PPG signal
     const raw = new Float64Array(allGreenValues);
     const mean = raw.reduce((a, b) => a + b, 0) / raw.length;
-    const inverted = new Float64Array(raw.length);
-    for (let i = 0; i < raw.length; i++) inverted[i] = -(raw[i] - mean);
+    const inverted = Float64Array.from(raw, v => -(v - mean));
 
-    // Detrend with window ~60 samples
+    // Detrend
     const w = Math.min(60, Math.floor(raw.length / 3));
     const trend = new Float64Array(raw.length);
     for (let i = 0; i < raw.length; i++) {
@@ -187,14 +179,12 @@ function finishRecording() {
       for (let j = start; j <= i; j++) sum += inverted[j];
       trend[i] = sum / (i - start + 1);
     }
-    const detrended = new Float64Array(raw.length);
-    for (let i = 0; i < raw.length; i++) detrended[i] = inverted[i] - trend[i];
+    const detrended = Float64Array.from(raw, (_, i) => inverted[i] - trend[i]);
 
     // Normalize
     const sqSum = detrended.reduce((a, b) => a + b * b, 0);
     const std = Math.sqrt(sqSum / raw.length) || 1;
-    const signal = new Float64Array(raw.length);
-    for (let i = 0; i < raw.length; i++) signal[i] = detrended[i] / std;
+    const signal = Float64Array.from(detrended, v => v / std);
 
     // Bandpass filter
     const bpFilter = createBandpassFilter(30);
@@ -215,7 +205,7 @@ function finishRecording() {
     showStep('step-results');
   } catch (err) {
     console.error('Analysis error:', err);
-    showError('Analysis failed. Please try again with a steady fingertip.');
+    showError('Analysis failed. Try again with a steady fingertip.');
   }
 
   cleanup();
@@ -225,7 +215,6 @@ function cancelRecording() {
   if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
   if (stopCapture) { stopCapture(); stopCapture = null; }
   if (stream) { stopCamera(stream); stream = null; track = null; }
-
   waveform.clear();
   showStep('step-setup');
   cleanup();

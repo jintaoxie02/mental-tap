@@ -479,6 +479,49 @@ body {
   text-align: center;
 }
 
+/* ---- Tap-to-start overlay ---- */
+.tap-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 12, 0.85);
+  cursor: pointer;
+  z-index: 10;
+  border-radius: var(--radius-lg);
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.tap-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tap-pulse {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent-glow-dim);
+  border: 2px solid var(--accent-glow);
+  animation: tapPulse 2s ease-in-out infinite;
+  margin-bottom: var(--space-lg);
+}
+
+@keyframes tapPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.tap-text {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 0 var(--space-lg);
+}
+
 /* ---- Results (Step 3) ---- */
 .results-title {
   font-family: var(--font-display);
