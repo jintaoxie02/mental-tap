@@ -153,12 +153,22 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
     for (const r of screening.results) {
       const item = document.createElement('div');
       item.className = 'screening-item';
+
+      const probDisplay = r.insufficientData
+        ? 'N/A'
+        : `${r.probability}%`;
+
+      const priorInfo = r.insufficientData
+        ? ''
+        : `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">Population: ${r.prior}% → Posterior: ${r.probability}%</div>`;
+
       item.innerHTML = `
         <div>
           <span class="screening-name">${r.name}</span>
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${r.description}</div>
+          ${priorInfo}
         </div>
-        <span class="screening-confidence ${r.level}">${r.level === 'high' ? '⚠ ' : ''}${r.confidence}%</span>
+        <span class="screening-confidence ${r.level}">${r.level === 'high' ? '⚠ ' : ''}${probDisplay}</span>
       `;
       listEl.appendChild(item);
     }

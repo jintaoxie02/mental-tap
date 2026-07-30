@@ -1,7 +1,14 @@
 /**
- * Zero-shot psychiatric screening classifier.
- * No training data needed — uses population normative HRV values
- * and known disorder autonomic signatures from published meta-analyses.
+ * Zero-shot Bayesian psychiatric screening.
+ *
+ * Uses a Naive Bayes model with:
+ *   - Prior: population prevalence P(D)
+ *   - Likelihood: P(z | D) from feature distributions shifted by
+ *     meta-analytic effect sizes (Hedges' g)
+ *   - Posterior: P(D | observed features) via Bayes' theorem
+ *
+ * No training data needed — all parameters come from published
+ * meta-analyses and population norms.
  */
 
 import {
@@ -9,30 +16,57 @@ import {
   DISORDER_SIGNATURES, getAgeGroup,
 } from './normative-data.js';
 
-/**
- * Compute z-score: how many standard deviations from the age/sex norm.
- * Negative z means below norm (most psychiatric conditions reduce HRV).
- */
+// ---- Population prevalence (prior probability) ----
+// Point prevalence from WHO and epidemiological surveys
+const PREVALENCE = {
+  depression:    0.05,  // ~5% of adults
+  anxiety:       0.04,  // ~4%
+  ptsd:          0.04,  // ~4% lifetime/past-year
+  bipolar:       0.01,  // ~1%
+  schizophrenia: 0.005, // ~0.5%
+};
+
+// ---- Helpers ----
+
 function zScore(observed, normMean, normSD) {
   if (normSD === 0) return 0;
   return (observed - normMean) / normSD;
 }
 
-/**
- * Get normative value for a given metric, age, and sex.
- */
 function getNorm(normTable, age, sex) {
   const group = getAgeGroup(age);
   const entry = normTable[group]?.[sex] || normTable[group]?.male;
   return entry || { mean: 0, sd: 1 };
 }
 
+/** Standard normal log-PDF at x */
+function logNormPDF(x) {
+  return -0.5 * Math.log(2 * Math.PI) - 0.5 * x * x;
+}
+
 /**
- * Run zero-shot screening.
- * @param {object} hrv - HRV metrics from computeHRV()
- * @param {number} age - User's age
- * @param {'male'|'female'} sex - User's sex
- * @returns {object} Screening results with disorder matches and confidence levels
+ * Log Bayes Factor for a single feature.
+ *
+ * H0 (healthy): z ~ N(0, 1)
+ * H1 (disorder): z ~ N(g × direction, 1)  where g = Hedges' g
+ *
+ * log BF = log P(z|H1) − log P(z|H0)
+ *        = [logNormPDF(z − g×d)] − [logNormPDF(z)]
+ *        = −½(z − gd)² + ½z²
+ *        = z × g × d − ½g²
+ */
+function featureLogBF(z, g, direction) {
+  return z * g * direction - 0.5 * g * g;
+}
+
+/**
+ * Bayesian screening.
+ *
+ * @param {object} hrv — HRV metrics from computeHRV()
+ * @param {number} age
+ * @param {'male'|'female'} sex
+ * @param {number|null} glucoseEstimate — mmol/L or null
+ * @returns {object} Screening results with posterior probabilities
  */
 export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
   const norms = {
@@ -44,70 +78,84 @@ export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
     hfPower: { mean: 800, sd: 600 },
   };
 
-  // Add glucose norm if estimate available
-  let glucoseZ = null;
-  if (glucoseEstimate !== null && glucoseEstimate !== undefined) {
-    const glucoseNorm = getNorm(NORMS_GLUCOSE, age, sex);
-    glucoseZ = zScore(glucoseEstimate, glucoseNorm.mean, glucoseNorm.sd);
-  }
-
-  // Compute z-scores for each metric
+  // z-scores
   const zScores = {};
   for (const [metric, norm] of Object.entries(norms)) {
     if (hrv[metric] !== undefined) {
       zScores[metric] = zScore(hrv[metric], norm.mean, norm.sd);
     }
   }
-  // Add glucose z-score as a synthetic feature
-  if (glucoseZ !== null) {
-    zScores.glucose = glucoseZ;
+  if (glucoseEstimate !== null && glucoseEstimate !== undefined) {
+    const gn = getNorm(NORMS_GLUCOSE, age, sex);
+    zScores.glucose = zScore(glucoseEstimate, gn.mean, gn.sd);
   }
 
-  // Match against each disorder signature
+  // Compute posterior for each disorder
   const results = DISORDER_SIGNATURES.map(disorder => {
-    let deviationScore = 0;
-    let totalWeight = 0;
-    const featureDeviations = {};
+    const prior = PREVALENCE[disorder.id] || 0.02;
+    const priorOdds = prior / (1 - prior);
+
+    // Sum log Bayes Factors across features
+    let totalLogBF = 0;
+    let featureCount = 0;
+    const featureContributions = {};
 
     for (const [feature, sig] of Object.entries(disorder.features)) {
       if (zScores[feature] === undefined) continue;
       const z = zScores[feature];
-      // Only penalize when the deviation is in the expected direction
-      const deviation = sig.direction === -1 ? Math.max(0, -z) : Math.max(0, z);
-      deviationScore += sig.weight * deviation;
-      totalWeight += sig.weight;
-      featureDeviations[feature] = {
+      const logBF = featureLogBF(z, sig.weight, sig.direction);
+      totalLogBF += logBF;
+      featureCount++;
+      featureContributions[feature] = {
         z: Math.round(z * 100) / 100,
-        deviation: Math.round(deviation * 100) / 100,
-        weight: sig.weight,
+        g: sig.weight,
+        direction: sig.direction,
+        logBF: Math.round(logBF * 1000) / 1000,
       };
     }
 
-    // Normalize deviation score
-    const avgDeviation = totalWeight > 0 ? deviationScore / totalWeight : 0;
+    // If no features matched, posterior = prior
+    if (featureCount === 0) {
+      return {
+        id: disorder.id,
+        name: disorder.name,
+        description: disorder.description,
+        probability: Math.round(prior * 100),
+        level: 'low',
+        prior: Math.round(prior * 100),
+        featureContributions: {},
+        insufficientData: true,
+      };
+    }
 
-    // Sigmoid to get confidence (0-100%)
-    const confidence = Math.round(sigmoid(avgDeviation - disorder.threshold * 0.7) * 100);
+    // Posterior odds = prior_odds × exp(total_log_BF)
+    const posteriorOdds = priorOdds * Math.exp(totalLogBF);
 
-    // Confidence level
+    // Posterior probability P(D | data)
+    const posterior = posteriorOdds / (1 + posteriorOdds);
+    const probability = Math.round(posterior * 100);
+
+    // Level classification based on posterior probability
     let level;
-    if (confidence >= 60) level = 'high';
-    else if (confidence >= 30) level = 'medium';
-    else level = 'low';
+    if (probability >= 25) level = 'high';       // 25%+ posterior is notable given low prior
+    else if (probability >= 10) level = 'medium'; // 10-25% = worth attention
+    else level = 'low';                           // <10% = close to or below population average
 
     return {
       id: disorder.id,
       name: disorder.name,
       description: disorder.description,
-      confidence,
+      probability,
       level,
-      deviationScore: Math.round(avgDeviation * 100) / 100,
-      featureDeviations,
+      prior: Math.round(prior * 100),
+      logBF: Math.round(totalLogBF * 100) / 100,
+      featureContributions,
+      insufficientData: false,
     };
   });
 
-  // Sort by confidence descending
-  results.sort((a, b) => b.confidence - a.confidence);
+  // Sort by posterior probability descending
+  results.sort((a, b) => b.probability - a.probability);
 
   return {
     results,
@@ -117,10 +165,6 @@ export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
     ageGroup: getAgeGroup(age),
     sex,
   };
-}
-
-function sigmoid(x) {
-  return 1 / (1 + Math.exp(-x * 2.5));
 }
 
 /**
@@ -133,13 +177,10 @@ export function getMetricStatus(metric, value, age, sex) {
     pnn50: NORMS_PNN50,
     lfhfRatio: NORMS_LFHF,
   };
-
   const normTable = normMap[metric];
   if (!normTable) return 'normal';
-
   const { mean, sd } = getNorm(normTable, age, sex);
   const z = zScore(value, mean, sd);
-
   if (z < -1.5) return 'low';
   if (z > 1.5) return 'high';
   return 'normal';
