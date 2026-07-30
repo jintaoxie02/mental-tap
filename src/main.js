@@ -119,7 +119,31 @@ function beginCapture() {
     }
 
     if (recentVals.length >= 90) {
-      // Lightweight detrend: subtract SMA with ~1s window
+      // ---- Fingertip presence check ----
+      // With fingertip covering camera+flash: green values are dark (lit through skin),
+      // stable, with subtle pulsatile variation. Without fingertip: bright, high-variance.
+      const valMean = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
+      const valStd = Math.sqrt(
+        recentVals.reduce((a, b) => a + (b - valMean) ** 2, 0) / recentVals.length
+      );
+      const valRange = Math.max(...recentVals) - Math.min(...recentVals);
+
+      // Conditions for valid fingertip signal:
+      // 1. Mean brightness < 80 (fingertip blocks most ambient light, flash shines through)
+      // 2. Raw std < 25 (ambient light without finger causes large swings from auto-exposure)
+      // 3. Range > 0.5 (there must be SOME variation — completely flat = no signal)
+      const fingerPresent = valMean < 80 && valStd < 25 && valRange > 0.5;
+
+      if (!fingerPresent) {
+        // Reset BPM state when finger is removed
+        bpmHistory = [];
+        lastPeakTs = 0;
+        prevPeakTs = 0;
+        updateBPM(0);
+        return;
+      }
+
+      // ---- Signal looks like a fingertip — run beat detection ----
       const n = recentVals.length;
       const smaWindow = 30;
       const detrended = new Float64Array(n);
@@ -130,11 +154,9 @@ function beginCapture() {
         detrended[i] = recentVals[i] - sum / (i - start + 1);
       }
 
-      // Std dev of detrended signal
       const dMean = detrended.reduce((a, b) => a + b, 0) / n;
       const dStd = Math.sqrt(detrended.reduce((a, b) => a + (b - dMean) ** 2, 0) / n) || 1e-6;
 
-      // Threshold: 0.4 std below mean (dips = blood absorbs green light)
       const threshold = dMean - dStd * 0.4;
 
       let beatDetected = false;
@@ -143,8 +165,7 @@ function beginCapture() {
         if (detrended[i] < threshold &&
             detrended[i] < detrended[i - 1] &&
             detrended[i] <= detrended[i + 1] &&
-            ts - lastPeakTs > 400) { // refractory: 400ms
-          // Compute instantaneous BPM from the previous beat interval
+            ts - lastPeakTs > 400) {
           if (prevPeakTs > 0 && lastPeakTs > 0) {
             const ibi = lastPeakTs - prevPeakTs;
             if (ibi >= 300 && ibi <= 2000) {
