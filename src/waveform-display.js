@@ -161,27 +161,32 @@ export class WaveformDisplay {
     }
   }
 
-  /** Small rhythm strip showing recent beat intervals as amber dots */
+  /** Rhythm strip showing recent beat intervals as connected dots */
   drawRhythmStrip(ctx, w, h, startX, stepX) {
     if (this.beatTimes.length < 2) return;
 
-    const stripH = 28;
+    const stripH = 36;
     const stripY = h - stripH;
     const centerY = stripY + stripH / 2;
 
-    // Background for rhythm strip
-    ctx.fillStyle = 'rgba(10, 10, 12, 0.6)';
+    // Background
+    ctx.fillStyle = 'rgba(10, 10, 12, 0.7)';
     ctx.fillRect(0, stripY, w, stripH);
 
-    // Top edge line
-    ctx.strokeStyle = '#1A1A1F';
+    // Top edge
+    ctx.strokeStyle = '#2A2A2F';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(0, stripY);
     ctx.lineTo(w, stripY);
     ctx.stroke();
 
-    // Compute RR intervals (in frames) from beat times
+    // Label
+    ctx.fillStyle = '#6B6B65';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.fillText('RR interval', 6, stripY + 11);
+
+    // Compute RR intervals in waveform-sample units
     const rrs = [];
     for (let i = 1; i < this.beatTimes.length; i++) {
       rrs.push(this.beatTimes[i] - this.beatTimes[i - 1]);
@@ -189,36 +194,63 @@ export class WaveformDisplay {
     if (rrs.length === 0) return;
 
     const rrMean = rrs.reduce((a, b) => a + b, 0) / rrs.length;
-    const rrMax = Math.max(...rrs, rrMean * 1.5);
-    const rrMin = Math.min(...rrs, rrMean * 0.5);
-    const rrRange = Math.max(rrMax - rrMin, 1);
+    if (rrMean === 0) return;
 
-    // Draw RR interval dots — spaced by time, height by variability
-    const dotR = Math.min(4, stripH / 4);
+    const rrMax = Math.max(...rrs, rrMean * 1.4);
+    const rrMin = Math.min(...rrs, rrMean * 0.6);
+    const rrRange = Math.max(rrMax - rrMin, 1);
+    const dotR = 5;
+
+    // Draw connecting line between dots
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(78, 205, 196, 0.25)';
+    ctx.lineWidth = 1;
+    let firstPoint = true;
+    const points = [];
+
     for (let i = 0; i < rrs.length; i++) {
       const beatIdx = this.beatTimes[i + 1];
       const x = startX + beatIdx * stepX;
-      if (x < 2 || x > w - 2) continue;
+      if (x < 4 || x > w - 4) continue;
 
       const normRR = (rrs[i] - rrMean) / rrRange;
-      const y = centerY + normRR * (stripH / 2 - dotR);
+      const y = centerY + normRR * (stripH / 2 - dotR - 2);
+      points.push({ x, y, rr: rrs[i] });
 
-      // Color: amber when steady, red when variable
-      const variability = Math.abs(rrs[i] - rrMean) / rrMean;
-      const r = Math.min(255, 120 + variability * 135);
-      const g = Math.max(40, 200 - variability * 160);
-      const b = Math.max(20, 50 - variability * 30);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.9)`;
+      if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw dots
+    for (const pt of points) {
+      const variability = Math.abs(pt.rr - rrMean) / rrMean;
+      // Steady = amber, variable = shifts toward red
+      const r = Math.round(200 + variability * 55);
+      const g = Math.round(160 - variability * 120);
+      const b = Math.round(40 - variability * 20);
+      ctx.fillStyle = `rgb(${Math.min(255,r)},${Math.max(30,g)},${Math.max(10,b)})`;
 
       ctx.beginPath();
-      ctx.arc(x, y, dotR, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, dotR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // White center dot for visibility
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Small label
-    ctx.fillStyle = '#5C5C58';
-    ctx.font = '9px Inter, sans-serif';
-    ctx.fillText('RR', 6, stripY + 12);
+    // Mean line
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([3, 6]);
+    ctx.beginPath();
+    ctx.moveTo(0, centerY);
+    ctx.lineTo(w, centerY);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   clear() {
