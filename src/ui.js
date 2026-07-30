@@ -33,9 +33,59 @@ export function updateTimer(secondsRemaining) {
   if (secEl) secEl.textContent = String(secs).padStart(2, '0');
 }
 
+let lastBPMValue = null;
+let beatTimeout = null;
+
 export function updateBPM(bpm) {
   const el = document.getElementById('bpm-value');
-  if (el) el.textContent = bpm > 0 ? String(bpm) : '--';
+  if (!el) return;
+
+  const displayVal = bpm > 0 ? String(bpm) : '--';
+  const prevVal = lastBPMValue;
+  lastBPMValue = displayVal;
+
+  // Only animate when value actually changes and a beat was newly detected
+  if (prevVal !== null && displayVal !== '--' && displayVal !== prevVal) {
+    el.textContent = displayVal;
+    pulseBeat(el);
+  } else if (displayVal !== el.textContent) {
+    el.textContent = displayVal;
+  }
+}
+
+/** Trigger beat-synced pulse on BPM number and indicator dot */
+function pulseBeat(bpmEl) {
+  // BPM number scales up briefly
+  bpmEl.classList.add('beat');
+  if (beatTimeout) clearTimeout(beatTimeout);
+  beatTimeout = setTimeout(() => {
+    bpmEl.classList.remove('beat');
+  }, 140);
+
+  // Beat indicator dot flashes
+  const dot = document.getElementById('beat-indicator');
+  if (dot) {
+    dot.classList.add('flash');
+    setTimeout(() => dot.classList.remove('flash'), 120);
+  }
+}
+
+/** Call this from main.js when a beat peak is detected (for visual only) */
+export function triggerBeatVisual() {
+  const dot = document.getElementById('beat-indicator');
+  if (dot) {
+    dot.classList.add('flash');
+    setTimeout(() => dot.classList.remove('flash'), 120);
+  }
+
+  const bpmEl = document.getElementById('bpm-value');
+  if (bpmEl && bpmEl.textContent !== '--') {
+    bpmEl.classList.add('beat');
+    if (beatTimeout) clearTimeout(beatTimeout);
+    beatTimeout = setTimeout(() => {
+      bpmEl.classList.remove('beat');
+    }, 140);
+  }
 }
 
 export function updateProgress(percent) {

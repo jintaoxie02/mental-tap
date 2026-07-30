@@ -15,7 +15,7 @@ import { WaveformDisplay } from './waveform-display.js';
 import {
   showStep, updateTimer, updateBPM, updateProgress,
   renderResults, showError, showSetupError,
-  setButtonEnabled, getAgeSex,
+  setButtonEnabled, getAgeSex, triggerBeatVisual,
 } from './ui.js';
 
 const RECORDING_DURATION = 120;
@@ -109,26 +109,31 @@ function beginCapture() {
       waveform.push(greenValue);
     }
 
-    // Quick BPM from raw green value peaks (5s rolling window)
+    // Quick BPM + beat detection from raw green value minima (5s sliding window)
     recentVals.push(greenValue);
     if (recentVals.length > 180) recentVals = recentVals.slice(-180);
 
     if (recentVals.length >= 90) {
       const avg = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
-      const threshold = avg * 1.001; // tiny threshold: pulse = slight brightness dip
+      const threshold = avg * 1.001;
       let peakCount = 0;
+      let beatDetected = false;
       for (let i = 1; i < recentVals.length - 1; i++) {
-        // green value dips when blood absorbs light → look for local minima
         if (recentVals[i] < threshold &&
             recentVals[i] < recentVals[i - 1] &&
             recentVals[i] <= recentVals[i + 1] &&
             i - lastPeakTime > 10) {
           peakCount++;
+          beatDetected = true;
           lastPeakTime = i;
         }
       }
+      if (beatDetected) {
+        waveform.markBeat();
+        triggerBeatVisual();
+      }
       if (peakCount > 0) {
-        const bpm = Math.round(peakCount * 12); // peaks in 5s → peaks/min
+        const bpm = Math.round(peakCount * 12);
         if (bpm >= 40 && bpm <= 180) {
           bpmHistory.push(bpm);
           if (bpmHistory.length > 5) bpmHistory.shift();

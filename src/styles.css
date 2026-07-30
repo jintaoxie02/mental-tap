@@ -403,24 +403,48 @@ body {
 
 .bpm-display {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+}
+
+.beat-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-clinical);
+  opacity: 0.45;
+  transition: all 80ms var(--ease-out);
+  box-shadow: 0 0 6px var(--accent-clinical);
+  flex-shrink: 0;
+}
+
+.beat-indicator.flash {
+  opacity: 1;
+  transform: scale(1.6);
+  box-shadow: 0 0 16px var(--accent-clinical), 0 0 32px rgba(78, 205, 196, 0.4);
 }
 
 .bpm-num {
   font-family: var(--font-mono);
-  font-size: 2.2rem;
+  font-size: 2.4rem;
   font-weight: 500;
   color: var(--accent-clinical);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
+  transition: transform 120ms var(--ease-out);
+  display: inline-block;
+}
+
+.bpm-num.beat {
+  transform: scale(1.12);
 }
 
 .bpm-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   font-weight: 500;
+  margin-left: 2px;
 }
 
 .waveform-container {
