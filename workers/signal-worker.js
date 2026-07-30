@@ -14,6 +14,17 @@ let timestampBuffer = [];
 let sampleCount = 0;
 
 self.onmessage = function (e) {
+  try {
+    handleMessage(e);
+  } catch (err) {
+    self.postMessage({
+      type: 'error',
+      payload: { message: err.message || String(err) },
+    });
+  }
+};
+
+function handleMessage(e) {
   const { type, payload } = e.data;
 
   switch (type) {
@@ -27,11 +38,12 @@ self.onmessage = function (e) {
     }
 
     case 'process': {
-      // payload: { signal: Float64Array, timestamps: Float64Array }
-      // Accumulate samples
-      for (let i = 0; i < payload.signal.length; i++) {
-        signalBuffer.push(payload.signal[i]);
-        timestampBuffer.push(payload.timestamps[i]);
+      // payload: { signal: number[], timestamps: number[] }
+      const sig = payload.signal;
+      const ts = payload.timestamps;
+      for (let i = 0; i < sig.length; i++) {
+        signalBuffer.push(sig[i]);
+        timestampBuffer.push(ts[i]);
       }
       sampleCount += payload.signal.length;
 
@@ -53,10 +65,16 @@ self.onmessage = function (e) {
 
       // Apply bandpass filter to recent data
       const signal = new Float64Array(signalBuffer);
+
+      // Guard against degenerate signals
+      if (signal.length < 30 || isNaN(signal[0])) {
+        self.postMessage({ type: 'interim', payload: { bpm: 0, sampleCount } });
+        return;
+      }
+
       const filtered = filter.process(signal);
 
-      // Re-initialize filter state to avoid transient accumulation issues
-      // ponytail: full re-filter is O(n), fine for n < 10k
+      // Re-filter with clean state for consistent output
       filter.reset();
       const filtered2 = filter.process(signal);
 
@@ -95,4 +113,4 @@ self.onmessage = function (e) {
       break;
     }
   }
-};
+}

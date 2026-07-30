@@ -13,6 +13,7 @@ import {
   renderResults, showError, showSetupError,
   setButtonEnabled, getAgeSex,
 } from './ui.js';
+import SignalWorker from '../workers/signal-worker.js?worker';
 
 // ---- State ----
 const RECORDING_DURATION = 120; // seconds
@@ -79,12 +80,25 @@ async function startRecording() {
     // Init PPG extractor
     ppgExtractor = createPPGExtractor();
 
-    // Init Web Worker
-    worker = new Worker(new URL('../workers/signal-worker.js', import.meta.url), { type: 'module' });
+    // Init Web Worker (Vite bundles via ?worker import)
+    worker = new SignalWorker();
+
+    worker.onerror = (err) => {
+      console.error('Worker error:', err);
+      cancelRecording();
+      showError('Signal processing error. Please ensure your fingertip covers the camera and flash completely, then try again.');
+    };
+
     worker.postMessage({ type: 'init', payload: { sampleRate: 30 } });
 
     worker.onmessage = (e) => {
       const { type, payload } = e.data;
+      if (type === 'error') {
+        console.error('Worker processing error:', payload.message);
+        cancelRecording();
+        showError(`Signal processing failed: ${payload.message}. Try again with your fingertip fully covering the camera.`);
+        return;
+      }
       if (type === 'result') {
         lastBPM = payload.bpm;
         lastHRV = payload.hrv;
@@ -92,18 +106,12 @@ async function startRecording() {
 
         // Feed display signal to waveform
         if (payload.displaySignal?.length > 0) {
-          // Push a few representative points for the live waveform
           const step = Math.max(1, Math.floor(payload.displaySignal.length / 60));
           for (let i = 0; i < payload.displaySignal.length; i += step) {
             waveform.push(payload.displaySignal[i]);
           }
         }
       }
-    };
-
-    worker.onerror = (err) => {
-      console.error('Worker error:', err);
-      showSetupError('Signal processing error. Please try again.');
     };
 
     // Transition to recording step
@@ -119,13 +127,14 @@ async function startRecording() {
 
       const result = ppgExtractor.add(greenValue, timestamp);
       if (result && worker) {
-        // Transfer signal data to worker (transferable for performance)
-        const signalCopy = new Float64Array(result.signal);
-        const timesCopy = new Float64Array(result.timestamps);
-        worker.postMessage(
-          { type: 'process', payload: { signal: signalCopy, timestamps: timesCopy, sampleRate: 30 } },
-          [signalCopy.buffer, timesCopy.buffer]
-        );
+        worker.postMessage({
+          type: 'process',
+          payload: {
+            signal: Array.from(result.signal),
+            timestamps: Array.from(result.timestamps),
+            sampleRate: 30,
+          },
+        });
       }
     });
 
@@ -212,7 +221,7 @@ function cancelRecording() {
 
 function cleanup() {
   if (worker) {
-    worker.postMessage({ type: 'reset' });
+    try { worker.postMessage({ type: 'reset' }); } catch {}
     worker.terminate();
     worker = null;
   }
