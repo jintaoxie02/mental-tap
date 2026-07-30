@@ -89,9 +89,9 @@ function beginCapture() {
   allTimestamps = [];
   allGreenValues = [];
 
-  // Simple BPM via rolling green-value peaks
   let recentVals = [];
-  let lastPeakTime = 0;
+  let recentTimes = [];
+  let lastPeakTs = 0;
   let bpmHistory = [];
 
   stopCapture = startCapture(track, (greenValue, timestamp) => {
@@ -109,31 +109,53 @@ function beginCapture() {
       waveform.push(greenValue);
     }
 
-    // Quick BPM + beat detection from raw green value minima (5s sliding window)
+    // BPM via detrended signal minima detection (5s rolling window)
     recentVals.push(greenValue);
-    if (recentVals.length > 180) recentVals = recentVals.slice(-180);
+    recentTimes.push(timestamp);
+    if (recentVals.length > 180) {
+      recentVals = recentVals.slice(-180);
+      recentTimes = recentTimes.slice(-180);
+    }
 
     if (recentVals.length >= 90) {
-      const avg = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
-      const threshold = avg * 1.001;
+      // Lightweight detrend: subtract SMA with ~1s window
+      const n = recentVals.length;
+      const smaWindow = 30;
+      const detrended = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        const start = Math.max(0, i - smaWindow);
+        let sum = 0;
+        for (let j = start; j <= i; j++) sum += recentVals[j];
+        detrended[i] = recentVals[i] - sum / (i - start + 1);
+      }
+
+      // Std dev of detrended signal
+      const dMean = detrended.reduce((a, b) => a + b, 0) / n;
+      const dStd = Math.sqrt(detrended.reduce((a, b) => a + (b - dMean) ** 2, 0) / n) || 1e-6;
+
+      // Threshold: 0.4 std below mean (dips = blood absorbs green light)
+      const threshold = dMean - dStd * 0.4;
+
       let peakCount = 0;
       let beatDetected = false;
-      for (let i = 1; i < recentVals.length - 1; i++) {
-        if (recentVals[i] < threshold &&
-            recentVals[i] < recentVals[i - 1] &&
-            recentVals[i] <= recentVals[i + 1] &&
-            i - lastPeakTime > 10) {
+      for (let i = 1; i < n - 1; i++) {
+        const ts = recentTimes[i];
+        if (detrended[i] < threshold &&
+            detrended[i] < detrended[i - 1] &&
+            detrended[i] <= detrended[i + 1] &&
+            ts - lastPeakTs > 400) { // refractory: 400ms
           peakCount++;
           beatDetected = true;
-          lastPeakTime = i;
+          lastPeakTs = ts;
         }
       }
+
       if (beatDetected) {
         waveform.markBeat();
         triggerBeatVisual();
       }
       if (peakCount > 0) {
-        const bpm = Math.round(peakCount * 12);
+        const bpm = Math.round(peakCount * 12); // peaks in 5s → peaks/min
         if (bpm >= 40 && bpm <= 180) {
           bpmHistory.push(bpm);
           if (bpmHistory.length > 5) bpmHistory.shift();
