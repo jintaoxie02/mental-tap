@@ -18,7 +18,7 @@
  */
 
 import {
-  NORMS_SDNN, NORMS_RMSSD, NORMS_PNN50, NORMS_LFHF,
+  NORMS_SDNN, NORMS_RMSSD, NORMS_PNN50, NORMS_LFHF, NORMS_DFA,
   DISORDER_SIGNATURES, getAgeGroup,
 } from './normative-data.js';
 
@@ -47,6 +47,11 @@ const FEATURE_CORR = {
   sdnn_lfhfRatio: 0.15,
   rmssd_lfhfRatio: 0.10,
   pnn50_lfhfRatio: 0.10,
+  // DFA α1 is only weakly coupled to the vagal time-domain indices
+  dfaAlpha1_sdnn: 0.40,
+  dfaAlpha1_rmssd: 0.30,
+  dfaAlpha1_pnn50: 0.25,
+  dfaAlpha1_lfhfRatio: 0.10,
 };
 
 // ---- Helpers ----
@@ -162,13 +167,15 @@ export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
     rmssd: getNorm(NORMS_RMSSD, age, sex),
     pnn50: getNorm(NORMS_PNN50, age, sex),
     lfhfRatio: getNorm(NORMS_LFHF, age, sex),
+    dfaAlpha1: NORMS_DFA,
   };
 
-  // z-scores
+  // z-scores (skip missing / non-finite values, e.g. DFA unavailable)
   const zScores = {};
   for (const [metric, norm] of Object.entries(norms)) {
-    if (hrv[metric] !== undefined) {
-      zScores[metric] = zScore(hrv[metric], norm.mean, norm.sd);
+    const v = hrv[metric];
+    if (v !== undefined && v !== null && Number.isFinite(v)) {
+      zScores[metric] = zScore(v, norm.mean, norm.sd);
     }
   }
 

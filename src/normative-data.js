@@ -65,8 +65,8 @@ export const NORMS_LFHF = {
  * - Depression: SDNN g=-0.87, RMSSD g=-0.51
  * - Anxiety: RMSSD reduced, HF reduced
  * - PTSD: overall HRV reduced
- * - Bipolar: overall HRV reduced
  * - Schizophrenia: RMSSD and HF strongly reduced
+ * - Depression/PTSD/schizophrenia also show reduced DFA α1 (fractal scaling)
  *
  * Excluded from the signatures (see zero-shot.js):
  * - Absolute LF/HF power: FFT scale is recording-length/amplitude dependent,
@@ -85,6 +85,7 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.87 },
       rmssd:   { direction: -1, weight: 0.51 },
+      dfaAlpha1: { direction: -1, weight: 0.40 },
     },
     threshold: 1.0,
     description: 'Reduced HRV across all domains (especially SDNN, g = −0.87).',
@@ -105,6 +106,7 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.50 },
       rmssd:   { direction: -1, weight: 0.50 },
+      dfaAlpha1: { direction: -1, weight: 0.40 },
     },
     threshold: 0.9,
     description: 'Broad HRV reduction. One of the strongest HRV-psychiatric associations in umbrella review.',
@@ -125,11 +127,17 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.40 },
       rmssd:   { direction: -1, weight: 0.70 },
+      dfaAlpha1: { direction: -1, weight: 0.40 },
     },
     threshold: 0.9,
     description: 'Strong parasympathetic (RMSSD, HF) reduction. Strongest evidence in umbrella review.',
   },
 ];
+
+// Normative DFA α1 (healthy adults, short-term scaling exponent).
+// Reduced α1 (~0.7-0.9 vs ~1.0) is an established correlate of depression,
+// PTSD, and schizophrenia; it is the one nonlinear index reliable at 120 s.
+export const NORMS_DFA = { mean: 1.0, sd: 0.2 };
 
 // Normative fasting glucose (mmol/L) by age
 export const NORMS_GLUCOSE = {

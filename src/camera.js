@@ -80,11 +80,27 @@ export function startCapture(track, onFrame) {
   const targetInterval = 16; // ~60fps target (adapts to delivered rate)
   let frameCount = 0;
 
-  function processFrame(timestamp) {
-    animId = requestAnimationFrame(processFrame);
+  // Prefer requestVideoFrameCallback: it fires once per *presented video frame*
+  // with a media-clock timestamp, removing display-to-media jitter from the IBI
+  // timing. Fall back to requestAnimationFrame if rVFC is unavailable or never
+  // fires (some iOS builds).
+  let rvfcActive = false;
+  let rvfcFallbackTimer = null;
 
-    if (timestamp - lastTime < targetInterval) return;
-    lastTime = timestamp;
+  function processFrame(timestamp, mediaTimeMs) {
+    const ts = mediaTimeMs !== undefined ? mediaTimeMs : timestamp;
+
+    // Re-arm the driver
+    if (rvfcActive) {
+      if (typeof video.requestVideoFrameCallback === 'function') {
+        video.requestVideoFrameCallback(step);
+      }
+    } else {
+      animId = requestAnimationFrame(processFrame);
+    }
+
+    if (ts - lastTime < targetInterval) return;
+    lastTime = ts;
 
     // Wait for video to actually be playing
     if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
@@ -106,16 +122,36 @@ export function startCapture(track, onFrame) {
       }
       const greenAvg = greenSum / n;
       frameCount++;
-      onFrame(greenAvg, timestamp);
+      onFrame(greenAvg, ts);
     } catch {
       // Skip frame on error
     }
   }
 
-  animId = requestAnimationFrame(processFrame);
+  function step(now, meta) {
+    rvfcActive = true;
+    if (rvfcFallbackTimer) { clearTimeout(rvfcFallbackTimer); rvfcFallbackTimer = null; }
+    cancelAnimationFrame(animId); // stop any rAF loop that started first
+    processFrame(now, meta.mediaTime * 1000);
+  }
+
+  if (typeof video.requestVideoFrameCallback === 'function') {
+    try {
+      video.requestVideoFrameCallback(step);
+      // If rVFC never fires (unsupported iOS path), fall back to rAF
+      rvfcFallbackTimer = setTimeout(() => {
+        if (!rvfcActive) animId = requestAnimationFrame(processFrame);
+      }, 500);
+    } catch {
+      animId = requestAnimationFrame(processFrame);
+    }
+  } else {
+    animId = requestAnimationFrame(processFrame);
+  }
 
   return () => {
     cancelAnimationFrame(animId);
+    if (rvfcFallbackTimer) clearTimeout(rvfcFallbackTimer);
     video.pause();
     video.srcObject = null;
     if (video.parentNode) video.parentNode.removeChild(video);

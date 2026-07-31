@@ -11,6 +11,7 @@ import { createBandpassFilter } from './signal-filter.js';
 import { detectBeats } from './beat-detector.js';
 import { editIbis } from './ibi-editor.js';
 import { evaluateSegments } from './signal-quality.js';
+import { computeDFA } from './dfa-alpha1.js';
 import { computeHRV } from './hrv-calculator.js';
 import { computeWaveformFeatures } from './waveform-features.js';
 import { screenDisorders } from './zero-shot.js';
@@ -406,8 +407,10 @@ function finishRecording() {
       return;
     }
 
-    // HRV, with RMSSD de-biased for the beat-timing noise floor
+    // HRV, with RMSSD de-biased for the beat-timing noise floor, plus DFA α1
+    // (the one nonlinear index reliable at 2 minutes). null when too short.
     const hrv = correctRMSSD(computeHRV(edited.ibis), fs);
+    hrv.dfaAlpha1 = computeDFA(edited.ibis);
 
     // Bail on insufficient beats — all-zero HRV metrics fed into the Bayesian
     // screening would produce wildly inflated false-positive posteriors.
