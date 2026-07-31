@@ -45,6 +45,7 @@ const STRINGS = {
     'results.disclaimer': '<strong>Important:</strong> This is an experimental screening tool, not a clinical diagnosis. These patterns are based on published research on heart rate variability and mental health. Consult a healthcare professional for proper evaluation.',
     'results.retake': 'Take Another Reading',
     'results.all_low': 'All posterior probabilities are at or near population baseline — your autonomic profile does not suggest elevated risk for any screened condition. This does not rule out mental health conditions.',
+    'results.glucose_experimental': 'experimental — not clinically validated',
 
     // Explainers
     'explain.metrics': `
@@ -163,6 +164,7 @@ const STRINGS = {
     'results.disclaimer': '<strong>注意：</strong>呢個係實驗性篩查工具，唔係臨床診斷。數據基於已發表嘅心率變異同心理健康研究。請諮詢醫護人員作正式評估。',
     'results.retake': '重新測量',
     'results.all_low': '所有後驗概率都接近或低於人口基線 — 你嘅數據同一般人差唔多，未見任何已篩查狀況嘅風險升高。當然，呢個唔代表一定冇問題。',
+    'results.glucose_experimental': '僅供參考 — 未經臨床驗證',
 
     // Explainers
     'explain.metrics': `

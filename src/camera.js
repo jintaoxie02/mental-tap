@@ -132,6 +132,11 @@ export function startCapture(track, onFrame) {
     rvfcActive = true;
     if (rvfcFallbackTimer) { clearTimeout(rvfcFallbackTimer); rvfcFallbackTimer = null; }
     cancelAnimationFrame(animId); // stop any rAF loop that started first
+    // The throttle gate compares timestamps within ONE clock domain; if the
+    // rAF fallback ran first, lastTime holds performance.now values while
+    // mediaTime starts near 0 — reset it so the first rVFC frame isn't
+    // spuriously throttled away.
+    lastTime = meta.mediaTime * 1000 - targetInterval;
     processFrame(now, meta.mediaTime * 1000);
   }
 

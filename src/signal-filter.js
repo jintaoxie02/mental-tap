@@ -60,13 +60,15 @@ function designBiquad(type, fc, fs) {
 
 /**
  * 4th-order Butterworth bandpass filter (cascade of two 2nd-order sections).
- * Passband: 0.7–3 Hz. Sampling rate: ~30 Hz.
+ * Default passband 0.7–3 Hz (covers 42–180 BPM); the cutoffs are
+ * parameterizable, e.g. the signal-quality gate uses a wider 0.5–3.5 Hz band
+ * so resting HR below ~46 BPM is not attenuated.
  */
-export function createBandpassFilter(sampleRate = 30) {
-  const hp1 = designBiquad('highpass', 0.7, sampleRate);
-  const hp2 = designBiquad('highpass', 0.7, sampleRate);
-  const lp1 = designBiquad('lowpass', 3.0, sampleRate);
-  const lp2 = designBiquad('lowpass', 3.0, sampleRate);
+export function createBandpassFilter(sampleRate = 30, lowHz = 0.7, highHz = 3.0) {
+  const hp1 = designBiquad('highpass', lowHz, sampleRate);
+  const hp2 = designBiquad('highpass', lowHz, sampleRate);
+  const lp1 = designBiquad('lowpass', highHz, sampleRate);
+  const lp2 = designBiquad('lowpass', highHz, sampleRate);
 
   const stages = [hp1, hp2, lp1, lp2];
 

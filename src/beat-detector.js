@@ -5,12 +5,15 @@
 
 /**
  * Sub-sample parabolic vertex offset for samples (prev, mid, next), mid a local
- * maximum. Returns 0 on a degenerate (flat/linear) neighbourhood instead of NaN.
+ * maximum. Returns 0 on a degenerate (flat/linear) neighbourhood, and clamps to
+ * ±0.5 so a small-but-nonzero second difference (ill-conditioned upstroke) can
+ * never produce an arbitrarily large index → NaN timestamp.
  */
 function parabolicOffset(prev, mid, next) {
   const denom = prev - 2 * mid + next;
-  if (!Number.isFinite(denom) || Math.abs(denom) < 1e-12) return 0;
-  return (prev - next) / (2 * denom);
+  if (!Number.isFinite(denom) || Math.abs(denom) < 1e-9) return 0;
+  const off = (prev - next) / (2 * denom);
+  return Math.max(-0.5, Math.min(0.5, off));
 }
 
 /**

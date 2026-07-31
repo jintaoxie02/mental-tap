@@ -357,6 +357,7 @@ function finishRecording() {
       .reduce((sum, s) => sum + (s.end - s.start) / fs, 0);
     if (acceptedSec < 60) {
       showError(t('error.signal_quality'));
+      cleanup();
       return;
     }
     const goodGreen = [];
@@ -404,6 +405,7 @@ function finishRecording() {
     const edited = editIbis(ibis);
     if (!edited.clean) {
       showError(t('error.no_data'));
+      cleanup();
       return;
     }
 
@@ -416,6 +418,7 @@ function finishRecording() {
     // screening would produce wildly inflated false-positive posteriors.
     if (hrv.error) {
       showError(t('error.no_data'));
+      cleanup();
       return;
     }
 

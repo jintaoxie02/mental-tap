@@ -91,9 +91,12 @@ function computeFrequencyDomain(ibis) {
   // Cumulate IBI times: cumTimes[i] is the time of the i-th beat.
   const cumTimes = [0];
   for (let i = 0; i < ibis.length; i++) cumTimes.push(cumTimes[i] + ibis[i]);
-  const totalDuration = cumTimes[cumTimes.length - 1];
 
-  const nSamples = Math.floor(totalDuration / resampleInterval);
+  // Size the grid to the LAST BEAT time (cumTimes has n+1 entries; the final
+  // entry is the end of the last IBI, beyond the last tachogram sample — the
+  // interpolator must not extrapolate past it).
+  const lastBeatTime = cumTimes[cumTimes.length - 2];
+  const nSamples = Math.floor(lastBeatTime / resampleInterval);
   if (nSamples < 32) return { lfPower: 0, hfPower: 0 };
 
   // FFT length — zero-padded to a power of two; bin k sits at k·fs/N.
@@ -181,9 +184,18 @@ function polyDetrend(y) {
     s0 += 1; s2 += t * t; s4 += t * t * t * t;
     b0 += yv; b1 += t * yv; b2 += t * t * yv;
   }
-  const c0 = s0 > 0 ? b0 / s0 : 0;
+  // Centering makes the linear column orthogonal (s1 = s3 = 0), so c1 is
+  // decoupled — but the constant and t² columns are coupled through s2, so c0
+  // and c2 must come from the 2×2 normal equations, not b0/s0 and b2/s4.
   const c1 = s2 > 0 ? b1 / s2 : 0;
-  const c2 = s4 > 0 ? b2 / s4 : 0;
+  const det = s0 * s4 - s2 * s2;
+  let c0 = 0, c2 = 0;
+  if (Math.abs(det) > 1e-12) {
+    c0 = (b0 * s4 - b2 * s2) / det;
+    c2 = (b2 * s0 - b0 * s2) / det;
+  } else if (s0 > 0) {
+    c0 = b0 / s0; // degenerate (n too small) — constant only
+  }
   const out = new Float64Array(n);
   for (let i = 0; i < n; i++) {
     const t = i - mid;

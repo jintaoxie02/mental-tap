@@ -50,8 +50,10 @@ function evaluateSegment(green, times, fs) {
   varTotal /= n;
   if (varTotal <= 1e-9) return { good: false, purity: 0, corr: 0 };
 
-  // Cardiac-band power fraction (spectral purity)
-  const bp = createBandpassFilter(fs);
+  // Cardiac-band power fraction (spectral purity). Use a wider 0.5–3.5 Hz band
+  // than the analysis filter so a genuinely clean low-HR (40–46 BPM) recording
+  // is not attenuated and falsely rejected.
+  const bp = createBandpassFilter(fs, 0.5, 3.5);
   const filtered = bp.process(detrended);
   let varCardiac = 0;
   for (let i = 0; i < n; i++) varCardiac += filtered[i] * filtered[i];

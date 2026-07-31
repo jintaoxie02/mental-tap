@@ -76,8 +76,9 @@ export function computeWaveformFeatures(signal, timestamps, beats) {
 
   return {
     crestTime: Math.round(crestTime * 1000) / 1000,
-    reflectionIndex: Math.round(reflectionIdx * 1000) / 1000,
-    augmentationIndex: Math.round(ai * 100) / 100,
+    // Clamp indices to physiologically meaningful [0, 1] range
+    reflectionIndex: Math.round(Math.max(0, Math.min(1, reflectionIdx)) * 1000) / 1000,
+    augmentationIndex: Math.round(Math.max(0, Math.min(1, ai)) * 100) / 100,
     pulseAmp: Math.round(pulseAmp * 1000) / 1000,
     error: null,
   };

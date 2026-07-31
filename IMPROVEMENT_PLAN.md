@@ -6,6 +6,34 @@ Research deliverable (2026-08-01). Grounded in (a) measured runs of the actual p
 2020–2026 literature), (c) verified literature. Nothing below requires labeled training data;
 every item is implementable from published statistics or standard DSP.
 
+## Implementation status (2026-08-01)
+
+Implemented and shipped (commits `81230cc` → `5e4a838`):
+- ✅ IBI artifact editing (ibi-editor.js), max-slope beat fiducial, RMSSD noise-floor
+  de-bias, fs parameterization
+- ✅ Multivariate-Gaussian logBF model (removed glucose, dropped pNN50/LF-HF, BF≥10 bar,
+  SDNN 2-min duration norm)
+- ✅ Segmental SQI gate + 60 fps capture request
+- ✅ Spectral rewrite (PCHIP resample, poly detrend, radix-2 FFT)
+- ✅ Mobile perf (shadowBlur removed, DPR cap, 64×64 ROI, ring buffers, O(n) detrend)
+- ✅ DFA α1 feature + rVFC media-synced timestamps
+- ✅ Honest reporting (Bayes factor, 95% credible interval via effect-size Monte-Carlo,
+  glucose card relabeled experimental)
+
+Decisions recorded against the plan (measured, not assumed):
+- **Elgendi detector: not adopted.** Implemented and benchmarked head-to-head vs the
+  rolling-max detector on a 48-signal calibration set. Elgendi lost on clean signals
+  (RMSSD floor 7.8 ms vs 4.8 ms — it double-counts the dicrotic notch) and tied on noisy
+  ones; the IBI editor already covers missed-beat artifacts.
+- **SMA detrend: kept.** Removing it (plan item 20) was measured to *raise* the RMSSD floor
+  from 4.8 ms to 11.7 ms — the 0.7 Hz high-pass does not substitute for it in beat-timing
+  precision. Robust-scale normalization was therefore also skipped.
+- **Live/offline pipeline unification: skipped.** Both paths already detect systole; the
+  live path is a coarse display, and unifying would re-run the full pipeline per frame.
+- **Worker offload: deferred.** End-of-recording analysis is ~20 ms incl. the credible
+  interval — well under the ~30 ms threshold at which a worker pays off.
+- **5-min recording, Lomb-Scargle, sample entropy, CSI/CVI: not added** (see Deferred).
+
 ## Executive summary — the quantified headline findings
 
 | # | Finding | Measured impact |

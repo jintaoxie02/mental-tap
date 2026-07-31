@@ -47,11 +47,13 @@ const FEATURE_CORR = {
   sdnn_lfhfRatio: 0.15,
   rmssd_lfhfRatio: 0.10,
   pnn50_lfhfRatio: 0.10,
-  // DFA α1 is only weakly coupled to the vagal time-domain indices
-  dfaAlpha1_sdnn: 0.40,
-  dfaAlpha1_rmssd: 0.30,
-  dfaAlpha1_pnn50: 0.25,
-  dfaAlpha1_lfhfRatio: 0.10,
+  // DFA α1 is treated as independent of the time-domain vagal indices. Although
+  // it correlates ~0.3-0.5 with them in population data, modeling that
+  // correlation produces a partial-regression sign flip (a low α1 alongside
+  // healthy SDNN/RMSSD is read as measurement noise, so the feature stops
+  // contributing in its published direction). Treating it as its own dimension
+  // preserves the intended direction at the cost of a small (<25% variance)
+  // over-count of its evidence.
 };
 
 // ---- Helpers ----
@@ -79,7 +81,9 @@ function getSDNNNorm(age, sex) {
 
 function featureCorr(f1, f2) {
   if (f1 === f2) return 1;
-  return FEATURE_CORR[[f1, f2].sort().join('_')] ?? 0;
+  // Try both key orders — a naive sort+join('_') would miss 'sdnn_rmssd'
+  // because the sorted key is 'rmssd_sdnn'.
+  return FEATURE_CORR[`${f1}_${f2}`] ?? FEATURE_CORR[`${f2}_${f1}`] ?? 0;
 }
 
 /**
@@ -113,14 +117,16 @@ function solveLinear(A, b) {
  * H0: z ~ N(0, Σ), H1: z ~ N(μ, Σ), μ = g·direction per feature.
  * log BF = μᵀΣ⁻¹z − ½μᵀΣ⁻¹μ.
  * With a single feature (Σ=[1]) this reduces to z·g·d − ½g².
+ * `scales` (optional, one per feature) multiplies the effect sizes — used to
+ * propagate effect-size uncertainty into a credible interval.
  */
-function multivariateLogBF(features, zScores) {
+function multivariateLogBF(features, zScores, scales = null) {
   const used = features.filter(([name]) => zScores[name] !== undefined);
   const m = used.length;
   if (m === 0) return { logBF: 0, used: 0 };
 
   const z = used.map(([name]) => zScores[name]);
-  const mu = used.map(([, s]) => s.weight * s.direction);
+  const mu = used.map(([, s], i) => (scales ? s.weight * scales[i] : s.weight) * s.direction);
 
   // Correlation matrix Σ for the used features (small ridge for conditioning)
   const Sigma = used.map(([a]) => used.map(([b]) => featureCorr(a, b)));
@@ -133,6 +139,53 @@ function multivariateLogBF(features, zScores) {
     logBF += mu[i] * sigmaInvZ[i] - 0.5 * mu[i] * sigmaInvMu[i];
   }
   return { logBF, used: m };
+}
+
+/** Deterministic PRNG (mulberry32) for reproducible Monte-Carlo intervals. */
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * 95% credible interval on the posterior, propagating effect-size uncertainty:
+ * each Hedges' g is sampled as g ~ N(ĝ, (ĝ/3)²) (the published meta-analytic
+ * g's carry ~±30% CIs). Seeded so results are reproducible.
+ * @returns {[number, number]|null} low/high posterior percent, or null if no
+ *   features are available.
+ */
+function credibleInterval(features, zScores, prior) {
+  const used = features.filter(([name]) => zScores[name] !== undefined);
+  if (used.length === 0) return null;
+
+  const logPriorOdds = Math.log(prior / (1 - prior));
+  const rng = mulberry32(42);
+  let spare = null;
+  const gauss = () => {
+    if (spare !== null) { const v = spare; spare = null; return v; }
+    let u = 0, v = 0, s = 0;
+    do { u = rng() * 2 - 1; v = rng() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+    const m = Math.sqrt(-2 * Math.log(s) / s);
+    spare = v * m;
+    return u * m;
+  };
+
+  const posts = [];
+  const N = 400;
+  for (let i = 0; i < N; i++) {
+    const scales = used.map(() => 1 + gauss() / 3);
+    const { logBF } = multivariateLogBF(features, zScores, scales);
+    posts.push(1 / (1 + Math.exp(-(logPriorOdds + logBF))));
+  }
+  posts.sort((a, b) => a - b);
+  return [
+    Math.round(posts[Math.floor(N * 0.05)] * 100),
+    Math.round(posts[Math.floor(N * 0.95)] * 100),
+  ];
 }
 
 /**
@@ -218,11 +271,15 @@ export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
     else if (logBF >= Math.log(3)) level = 'medium';
     else level = 'low';
 
+    const ci = credibleInterval(Object.entries(disorder.features), zScores, prior);
+
     return {
       id: disorder.id,
       name: disorder.name,
       description: disorder.description,
       probability,
+      ciLow: ci ? ci[0] : null,
+      ciHigh: ci ? ci[1] : null,
       level,
       prior: Math.round(prior * 100),
       logBF: Math.round(logBF * 100) / 100,

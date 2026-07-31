@@ -121,10 +121,10 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
       glucoseStatus.textContent = glucose.level.toUpperCase();
       glucoseStatus.className = `metric-status ${glucose.level === 'normal' ? 'normal' : glucose.level === 'elevated' ? 'low' : 'high'}`;
     }
-    // Glucose footnote
+    // Glucose footnote — the estimate is explicitly experimental
     const glucoseNote = document.getElementById('glucose-note');
     if (glucoseNote) {
-      glucoseNote.textContent = `≈ ${glucose.mgDl} mg/dL · ${glucose.label}`;
+      glucoseNote.textContent = `≈ ${glucose.mgDl} mg/dL · ${glucose.label} · ${t('results.glucose_experimental')}`;
     }
   }
 
@@ -142,15 +142,23 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
       ? 'N/A'
       : `${r.probability}%`;
 
-    const priorInfo = r.insufficientData
-      ? ''
-      : `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">Population: ${r.prior}% → Posterior: ${r.probability}%</div>`;
+    // Evidence summary: posterior with 95% credible interval + Bayes factor
+    let evidence = '';
+    if (!r.insufficientData) {
+      const ci = (r.ciLow !== null && r.ciHigh !== null)
+        ? ` · 95% CI ${r.ciLow}–${r.ciHigh}%`
+        : '';
+      evidence = `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">Population: ${r.prior}% → Posterior: ${r.probability}%${ci}</div>`;
+      if (r.bayesFactor >= 3) {
+        evidence += `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">${r.bayesFactor}× more consistent with this pattern than the general population</div>`;
+      }
+    }
 
     item.innerHTML = `
       <div>
         <span class="screening-name">${r.name}</span>
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${t(`disorder.${r.id}`)}</div>
-        ${priorInfo}
+        ${evidence}
       </div>
       <span class="screening-confidence ${r.level}">${r.level === 'high' ? '⚠ ' : ''}${probDisplay}</span>
     `;
