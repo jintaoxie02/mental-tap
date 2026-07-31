@@ -4,13 +4,26 @@
  */
 
 /**
+ * Sub-sample parabolic vertex offset for samples (prev, mid, next), mid a local
+ * maximum. Returns 0 on a degenerate (flat/linear) neighbourhood instead of NaN.
+ */
+function parabolicOffset(prev, mid, next) {
+  const denom = prev - 2 * mid + next;
+  if (!Number.isFinite(denom) || Math.abs(denom) < 1e-12) return 0;
+  return (prev - next) / (2 * denom);
+}
+
+/**
  * Detect systolic peaks in PPG signal.
  * Returns array of { index, value, timestamp } for each detected beat.
+ * `index` is the refined systolic apex (for waveform morphology); `timestamp`
+ * is located at the maximum-slope point of the systolic upstroke (a far more
+ * repeatable timing marker than the band-pass-flattened apex).
  */
 export function detectBeats(signal, timestamps, sampleRate = 30) {
   if (signal.length < 60) return { beats: [], ibis: [], bpm: 0 };
 
-  // Adaptive threshold: 60% of rolling max over ~1.5s window
+  // Adaptive threshold: 55% of rolling max over ~1.5s window
   const windowSize = Math.floor(1.5 * sampleRate);
   const threshold = new Float64Array(signal.length);
 
@@ -26,6 +39,9 @@ export function detectBeats(signal, timestamps, sampleRate = 30) {
   // Minimum distance between peaks (refractory period ~0.4s)
   const minDist = Math.floor(0.4 * sampleRate);
 
+  // Samples of the upstroke scanned for the max-slope fiducial (~200 ms before peak)
+  const slopeWindow = Math.max(4, Math.floor(0.2 * sampleRate));
+
   // Detect peaks
   const beats = [];
   let lastPeakIdx = -minDist;
@@ -36,20 +52,38 @@ export function detectBeats(signal, timestamps, sampleRate = 30) {
 
     // Local maximum check
     if (signal[i] >= signal[i - 1] && signal[i] > signal[i + 1]) {
-      // Refine peak position using parabolic interpolation
+      // Peak index — parabolic refinement of the apex. Used by waveform
+      // morphology, where the template must stay centered on the peak.
       const alpha = signal[i - 1];
       const beta = signal[i];
       const gamma = signal[i + 1];
-      const offset = (alpha - gamma) / (2 * (alpha - 2 * beta + gamma));
-      const refinedIdx = i + offset;
-      const refinedVal = beta - ((alpha - gamma) * offset) / 4;
-      const refinedTs = timestamps[Math.floor(i)]
-        + (timestamps[Math.min(Math.floor(i) + 1, timestamps.length - 1)]
-           - timestamps[Math.floor(i)]) * (refinedIdx - i);
+      const peakIndex = i + parabolicOffset(alpha, beta, gamma);
+
+      // HRV timing fiducial — relocate to the maximum of the first difference
+      // within [i - slopeWindow, i]: the inflection point of the upstroke is a
+      // far more repeatable timing marker than the band-pass-flattened apex.
+      let m = i;
+      let maxDiff = -Infinity;
+      const lo = Math.max(1, i - slopeWindow);
+      for (let j = lo; j <= i; j++) {
+        const d = signal[j] - signal[j - 1];
+        if (d > maxDiff) { maxDiff = d; m = j; }
+      }
+      const d0 = signal[m - 1] - signal[m - 2];
+      const d1 = signal[m] - signal[m - 1];
+      const d2 = signal[m + 1] - signal[m];
+      const fidIndex = m + parabolicOffset(d0, d1, d2);
+
+      // Linear interpolation of the timestamp at the refined (fractional) index
+      const base = Math.floor(fidIndex);
+      const next = Math.min(base + 1, timestamps.length - 1);
+      const frac = fidIndex - base;
+      const refinedTs = timestamps[base] + (timestamps[next] - timestamps[base]) * frac;
 
       beats.push({
-        index: refinedIdx,
-        value: refinedVal,
+        index: peakIndex,     // systolic apex (for waveform morphology)
+        fiducialIndex: fidIndex, // max-slope upstroke point (for timing)
+        value: signal[i],
         timestamp: refinedTs,
       });
 

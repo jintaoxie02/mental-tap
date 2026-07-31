@@ -9,6 +9,7 @@
 import { getCamera, startCapture, stopCamera } from './camera.js';
 import { createBandpassFilter } from './signal-filter.js';
 import { detectBeats } from './beat-detector.js';
+import { editIbis } from './ibi-editor.js';
 import { computeHRV } from './hrv-calculator.js';
 import { computeWaveformFeatures } from './waveform-features.js';
 import { screenDisorders } from './zero-shot.js';
@@ -23,6 +24,31 @@ import {
 import { translatePage } from './translate.js';
 
 const RECORDING_DURATION = 120;
+
+// RMSSD noise-floor (ms), calibrated on clean synthetic PPG through the fixed
+// pipeline (see calibrate-floor.mjs): RMSSD²_measured ≈ RMSSD²_true + c.
+// The 30 fps floor is ~4.9 ms; 60 fps ~4.5 ms.
+const RMSSD_FLOOR = { 30: 4.9, 60: 4.5 };
+
+/** Estimate the real capture sample rate from the recorded frame timestamps. */
+function estimateFs(times) {
+  const diffs = [];
+  for (let i = 1; i < times.length; i++) {
+    const d = times[i] - times[i - 1];
+    if (d > 5 && d < 200) diffs.push(d);
+  }
+  if (!diffs.length) return 30;
+  diffs.sort((a, b) => a - b);
+  const med = diffs[Math.floor(diffs.length / 2)];
+  return Math.max(15, Math.min(90, Math.round(1000 / med)));
+}
+
+/** De-bias RMSSD for the beat-timing noise floor so low-HRV isn't inflated. */
+function correctRMSSD(hrv, fs) {
+  const floor = fs >= 45 ? RMSSD_FLOOR[60] : RMSSD_FLOOR[30];
+  const corr = Math.sqrt(Math.max(hrv.rmssd * hrv.rmssd - floor * floor, 0));
+  return { ...hrv, rmssd: Math.round(corr * 100) / 100, rmssdFloor: floor };
+}
 
 // ---- State ----
 let stream = null;
@@ -279,6 +305,11 @@ function finishRecording() {
   }
 
   try {
+    // Real capture rate (30 or 60 fps on typical phones) — every downstream
+    // window/coefficient is parameterized on it.
+    const times = new Float64Array(allTimestamps);
+    const fs = estimateFs(times);
+
     // Build PPG signal
     const raw = new Float64Array(allGreenValues);
     const mean = raw.reduce((a, b) => a + b, 0) / raw.length;
@@ -301,15 +332,23 @@ function finishRecording() {
     const signal = Float64Array.from(detrended, v => v / std);
 
     // Bandpass filter
-    const bpFilter = createBandpassFilter(30);
+    const bpFilter = createBandpassFilter(fs);
     const filtered = bpFilter.process(signal);
 
     // Beat detection
-    const times = new Float64Array(allTimestamps);
-    const { beats, ibis, bpm } = detectBeats(filtered, times, 30);
+    const { beats, ibis, bpm } = detectBeats(filtered, times, fs);
 
-    // HRV
-    const hrv = computeHRV(ibis);
+    // IBI artifact editing — a single missed/extra beat would otherwise
+    // dominate RMSSD/SDNN (inflating them by >50%) and push every disorder
+    // posterior toward false negatives.
+    const edited = editIbis(ibis);
+    if (!edited.clean) {
+      showError(t('error.no_data'));
+      return;
+    }
+
+    // HRV, with RMSSD de-biased for the beat-timing noise floor
+    const hrv = correctRMSSD(computeHRV(edited.ibis), fs);
 
     // Bail on insufficient beats — all-zero HRV metrics fed into the Bayesian
     // screening would produce wildly inflated false-positive posteriors.

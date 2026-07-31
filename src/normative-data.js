@@ -57,21 +57,26 @@ export const NORMS_LFHF = {
 
 /**
  * Disorder autonomic signatures.
- * For each disorder, lists which HRV features are altered
- * and in which direction (1 = elevated in disorder, -1 = reduced in disorder).
- * Weights based on meta-analytic effect sizes.
+ * For each disorder, lists which HRV features are altered and in which
+ * direction (1 = elevated in disorder, -1 = reduced in disorder), with weights
+ * based on meta-analytic effect sizes (Hedges' g).
  *
  * Hedges' g from Wu et al. (2023) and Translational Psychiatry (2025):
- * - Depression: SDNN g=-0.87, RMSSD g=-0.51, HF g=-0.51, LF g=-0.34
+ * - Depression: SDNN g=-0.87, RMSSD g=-0.51
  * - Anxiety: RMSSD reduced, HF reduced
  * - PTSD: overall HRV reduced
  * - Bipolar: overall HRV reduced
  * - Schizophrenia: RMSSD and HF strongly reduced
  *
- * Absolute LF/HF power are excluded from the signatures: this app's FFT power
- * scale is recording-length/amplitude dependent with no validated norm, so
- * their z-scores were unreliable. The scale-free LF/HF ratio is kept where
- * the evidence calls for it (anxiety, PTSD).
+ * Excluded from the signatures (see zero-shot.js):
+ * - Absolute LF/HF power: FFT scale is recording-length/amplitude dependent,
+ *   no validated norm.
+ * - pNN50: its 50 ms threshold sits inside the 30 fps beat-timing noise and it
+ *   needs ~5 min to stabilize; RMSSD already captures the vagal signal.
+ * - LF/HF ratio: non-significant in Wu et al. (g=-0.05, p=0.68) and
+ *   low-precision at 2 min.
+ * - PPG-glucose heuristic: a deterministic function of the same HRV metrics
+ *   (double-counting) and not clinically validated.
  */
 export const DISORDER_SIGNATURES = [
   {
@@ -80,11 +85,9 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.87 },
       rmssd:   { direction: -1, weight: 0.51 },
-      pnn50:   { direction: -1, weight: 0.43 },
-      glucose: { direction: 1, weight: 0.35 }, // SMD=0.30 from Wong et al. (2026)
     },
     threshold: 1.0,
-    description: 'Reduced HRV across all domains (especially SDNN, g = −0.87). Often with elevated fasting glucose (SMD = 0.30).',
+    description: 'Reduced HRV across all domains (especially SDNN, g = −0.87).',
   },
   {
     id: 'anxiety',
@@ -92,8 +95,6 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.30 },
       rmssd:   { direction: -1, weight: 0.40 },
-      pnn50:   { direction: -1, weight: 0.25 },
-      lfhfRatio: { direction: 1, weight: 0.15 }, // mild sympathetic dominance
     },
     threshold: 0.9,
     description: 'Mild to moderate HRV reduction, particularly parasympathetic (RMSSD, HF).',
@@ -104,8 +105,6 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.50 },
       rmssd:   { direction: -1, weight: 0.50 },
-      pnn50:   { direction: -1, weight: 0.40 },
-      lfhfRatio: { direction: 1, weight: 0.20 },
     },
     threshold: 0.9,
     description: 'Broad HRV reduction. One of the strongest HRV-psychiatric associations in umbrella review.',
@@ -116,11 +115,9 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.35 },
       rmssd:   { direction: -1, weight: 0.35 },
-      pnn50:   { direction: -1, weight: 0.25 },
-      glucose: { direction: 1, weight: 0.30 }, // metabolic syndrome more common in BD
     },
     threshold: 0.9,
-    description: 'Mild HRV reduction. May normalize during euthymic states. Metabolic disturbances (↑ glucose, ↑ triglycerides) common.',
+    description: 'Mild HRV reduction. May normalize during euthymic states.',
   },
   {
     id: 'schizophrenia',
@@ -128,7 +125,6 @@ export const DISORDER_SIGNATURES = [
     features: {
       sdnn:    { direction: -1, weight: 0.40 },
       rmssd:   { direction: -1, weight: 0.70 },
-      pnn50:   { direction: -1, weight: 0.50 },
     },
     threshold: 0.9,
     description: 'Strong parasympathetic (RMSSD, HF) reduction. Strongest evidence in umbrella review.',

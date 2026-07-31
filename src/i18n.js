@@ -111,10 +111,10 @@ const STRINGS = {
     'error.signal_failed': 'Signal processing error. Please ensure your fingertip covers the camera and flash completely, then try again.',
 
     // Disorder descriptions
-    'disorder.depression': 'Reduced HRV across all domains (especially SDNN, g = −0.87). Often with elevated fasting glucose (SMD = 0.30).',
+    'disorder.depression': 'Reduced HRV across all domains (especially SDNN, g = −0.87).',
     'disorder.anxiety': 'Mild to moderate HRV reduction, particularly parasympathetic (RMSSD, HF).',
     'disorder.ptsd': 'Broad HRV reduction. One of the strongest HRV-psychiatric associations in umbrella review.',
-    'disorder.bipolar': 'Mild HRV reduction. May normalize during euthymic states. Metabolic disturbances (↑ glucose, ↑ triglycerides) common.',
+    'disorder.bipolar': 'Mild HRV reduction. May normalize during euthymic states.',
     'disorder.schizophrenia': 'Strong parasympathetic (RMSSD, HF) reduction. Strongest evidence in umbrella review.',
 
     // Language switcher
@@ -228,10 +228,10 @@ const STRINGS = {
     'error.signal_failed': '訊號處理出錯。請確保指尖完全遮蓋鏡頭同閃光燈，然後再試。',
 
     // Disorder descriptions
-    'disorder.depression': '心跳變化大幅減少（尤其SDNN, g = −0.87），常伴隨空腹血糖偏高（SMD = 0.30）',
+    'disorder.depression': '心跳變化大幅減少（尤其SDNN, g = −0.87）',
     'disorder.anxiety': '心跳變化輕度至中度減少，尤其放鬆相關指標（RMSSD、HF）',
     'disorder.ptsd': '心跳變化全面減少，係umbrella review入面最強嘅HRV-精神科關聯之一',
-    'disorder.bipolar': '心跳變化輕度減少，情緒穩定時可能恢復正常。代謝異常（血糖同三酸甘油酯偏高）常見',
+    'disorder.bipolar': '心跳變化輕度減少，情緒穩定時可能恢復正常',
     'disorder.schizophrenia': '放鬆系統明顯減弱（↓↓ RMSSD、↓↓ HF），係umbrella review入面最強嘅發現',
 
     // Language switcher
