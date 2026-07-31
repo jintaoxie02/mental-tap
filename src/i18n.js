@@ -42,7 +42,7 @@ const STRINGS = {
     'results.metrics_explain': 'What do these metrics mean?',
     'results.calc_explain': 'How are these calculated?',
     'results.refs': 'Academic references',
-    'results.disclaimer': 'This is an experimental screening tool, not a clinical diagnosis. These patterns are based on published research on heart rate variability and mental health. Consult a healthcare professional for proper evaluation.',
+    'results.disclaimer': '<strong>Important:</strong> This is an experimental screening tool, not a clinical diagnosis. These patterns are based on published research on heart rate variability and mental health. Consult a healthcare professional for proper evaluation.',
     'results.retake': 'Take Another Reading',
     'results.all_low': 'All posterior probabilities are at or near population baseline — your autonomic profile does not suggest elevated risk for any screened condition. This does not rule out mental health conditions.',
 

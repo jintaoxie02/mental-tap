@@ -17,9 +17,9 @@ export function computeWaveformFeatures(signal, timestamps, beats) {
 
   // Build beat templates: extract signal segments around each beat
   const templates = [];
-  const avgBeatLen = 60000 / (beats.length > 1
-    ? 60000 * beats.length / ((beats[beats.length - 1].timestamp - beats[0].timestamp) / 1000)
-    : 70); // assume 70 BPM
+  const avgBeatLen = beats.length > 1
+    ? (beats[beats.length - 1].timestamp - beats[0].timestamp) / (beats.length - 1) // avg IBI in ms
+    : 60000 / 70; // assume 70 BPM → ~857ms
   const halfWindow = Math.floor((avgBeatLen / 1000) * 30 / 2); // half beat at 30fps
 
   for (const beat of beats) {

@@ -29,7 +29,7 @@ export function translatePage() {
     el.setAttribute('data-tip', t(key));
   });
 
-  // Disclaimer needs innerHTML for <strong> tag
+  // Disclaimer uses innerHTML — translations carry their own formatting
   const disc = document.querySelector('.disclaimer');
-  if (disc) disc.innerHTML = `<strong>${t('results.disclaimer').split(':')[0]}:</strong> ${t('results.disclaimer').split(': ').slice(1).join(': ')}`;
+  if (disc) disc.innerHTML = t('results.disclaimer');
 }

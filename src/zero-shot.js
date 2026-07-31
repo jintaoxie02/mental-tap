@@ -35,8 +35,13 @@ function zScore(observed, normMean, normSD) {
 
 function getNorm(normTable, age, sex) {
   const group = getAgeGroup(age);
-  const entry = normTable[group]?.[sex] || normTable[group]?.male;
-  return entry || { mean: 0, sd: 1 };
+  const entry = normTable[group];
+  if (!entry) return { mean: 0, sd: 1 };
+  // Tables with mean/sd directly (e.g., NORMS_GLUCOSE — not sex-split)
+  if (entry.mean !== undefined) return entry;
+  // Tables with sex-split entries (e.g., NORMS_SDNN)
+  const sexEntry = entry[sex] || entry.male;
+  return sexEntry || { mean: 0, sd: 1 };
 }
 
 /** Standard normal log-PDF at x */

@@ -78,15 +78,7 @@ export function triggerBeatVisual() {
     dot.classList.add('flash');
     setTimeout(() => dot.classList.remove('flash'), 120);
   }
-
-  const bpmEl = document.getElementById('bpm-value');
-  if (bpmEl && bpmEl.textContent !== '--') {
-    bpmEl.classList.add('beat');
-    if (beatTimeout) clearTimeout(beatTimeout);
-    beatTimeout = setTimeout(() => {
-      bpmEl.classList.remove('beat');
-    }, 140);
-  }
+  // BPM element animation is handled by updateBPM→pulseBeat when BPM changes
 }
 
 export function updateProgress(percent) {
