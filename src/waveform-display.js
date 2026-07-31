@@ -21,7 +21,9 @@ export class WaveformDisplay {
 
   resize() {
     const rect = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    // Cap DPR at 2 — 3x+ phones would otherwise push ~2.25x more pixels through
+    // the GPU for no visible gain on a live trace.
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
     this.canvas.width = rect.width * dpr;
     this.canvas.height = rect.height * dpr;
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -129,13 +131,13 @@ export class WaveformDisplay {
     }
 
     // ---- Main trace ----
+    // No ctx.shadowBlur here — it is a well-known mobile-GPU killer and the CSS
+    // .waveform-glow already provides the ambient glow.
     ctx.beginPath();
     ctx.strokeStyle = '#4ECDC4';
     ctx.lineWidth = 1.8;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.shadowColor = '#4ECDC4';
-    ctx.shadowBlur = 6;
 
     for (let i = 0; i < n; i++) {
       const x = startX + i * stepX;
@@ -143,7 +145,6 @@ export class WaveformDisplay {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
     // Gradient fill under trace
     const gradient = ctx.createLinearGradient(0, 0, 0, h);

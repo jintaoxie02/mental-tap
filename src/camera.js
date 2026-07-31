@@ -65,18 +65,15 @@ export function startCapture(track, onFrame) {
     console.error('Video play failed:', err);
   });
 
-  // Offscreen canvas for frame extraction
+  // Offscreen canvas for frame extraction. We downscale the center 60% of the
+  // stream directly into a 64×64 canvas — 4,096 pixels instead of a 192×144
+  // ROI readback (27,648 px). The browser's bilinear downscale acts as the
+  // spatial anti-aliasing average, so the averaged green value is unchanged.
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const capW = 320, capH = 240;
-  canvas.width = capW;
-  canvas.height = capH;
-
-  // ROI: center 60% (where fingertip presses)
-  const roiX = Math.floor(capW * 0.2);
-  const roiY = Math.floor(capH * 0.2);
-  const roiW = Math.floor(capW * 0.6);
-  const roiH = Math.floor(capH * 0.6);
+  const capSize = 64;
+  canvas.width = capSize;
+  canvas.height = capSize;
 
   let animId;
   let lastTime = 0;
@@ -93,12 +90,17 @@ export function startCapture(track, onFrame) {
     if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
 
     try {
-      ctx.drawImage(video, 0, 0, capW, capH);
-      const imageData = ctx.getImageData(roiX, roiY, roiW, roiH);
+      // Center 60% of the stream, downscaled to the 64×64 capture canvas
+      const vw = video.videoWidth || capSize;
+      const vh = video.videoHeight || capSize;
+      const srcX = vw * 0.2, srcY = vh * 0.2;
+      const srcW = vw * 0.6, srcH = vh * 0.6;
+      ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, capSize, capSize);
+      const imageData = ctx.getImageData(0, 0, capSize, capSize);
       const pixels = imageData.data;
 
       let greenSum = 0;
-      const n = roiW * roiH;
+      const n = capSize * capSize;
       for (let i = 1; i < pixels.length; i += 4) {
         greenSum += pixels[i];
       }

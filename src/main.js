@@ -31,6 +31,27 @@ const RECORDING_DURATION = 120;
 // The 30 fps floor is ~4.9 ms; 60 fps ~4.5 ms.
 const RMSSD_FLOOR = { 30: 4.9, 60: 4.5 };
 
+// Live-BPM ring buffers (6 s window at up to ~120 fps). Reused across
+// recordings; allocated once.
+const LIVE_WINDOW_MAX = 720;
+const recentValsBuf = new Float64Array(LIVE_WINDOW_MAX);
+const recentTimesBuf = new Float64Array(LIVE_WINDOW_MAX);
+
+/** Estimate the live capture rate from the most recent ring-buffer timestamps. */
+function liveSampleRate(head, count) {
+  const dt = [];
+  const start = Math.max(0, count - 40);
+  for (let i = start; i < count - 1; i++) {
+    const a = recentTimesBuf[(head - count + i + LIVE_WINDOW_MAX) % LIVE_WINDOW_MAX];
+    const b = recentTimesBuf[(head - count + i + 1 + LIVE_WINDOW_MAX) % LIVE_WINDOW_MAX];
+    const d = b - a;
+    if (d > 5 && d < 200) dt.push(d);
+  }
+  if (!dt.length) return 30;
+  dt.sort((a, b) => a - b);
+  return Math.max(15, Math.min(90, Math.round(1000 / dt[Math.floor(dt.length / 2)])));
+}
+
 /** Estimate the real capture sample rate from the recorded frame timestamps. */
 function estimateFs(times) {
   const diffs = [];
@@ -181,8 +202,10 @@ function beginCapture() {
   allTimestamps = [];
   allGreenValues = [];
 
-  let recentVals = [];
-  let recentTimes = [];
+  // Fixed ring buffers for the live BPM window (~6 s, up to ~120 fps) —
+  // no per-frame array allocations.
+  let recentHead = 0;
+  let recentCount = 0;
   let lastPeakTs = 0;
   let prevPeakTs = 0;
   let bpmHistory = [];
@@ -202,27 +225,35 @@ function beginCapture() {
       waveform.push(greenValue);
     }
 
-    // BPM via detrended signal valley detection (~6s rolling window).
-    // Window sizes are scaled by the live capture rate so the same code works
-    // at 30 or 60 fps.
-    recentVals.push(greenValue);
-    recentTimes.push(timestamp);
-    const liveFs = recentTimes.length > 4 ? estimateFs(recentTimes) : 30;
-    const windowLen = Math.max(90, Math.round(6 * liveFs));
-    if (recentVals.length > windowLen) {
-      recentVals = recentVals.slice(-windowLen);
-      recentTimes = recentTimes.slice(-windowLen);
-    }
+    // BPM via detrended signal valley detection over a ~6s ring buffer.
+    // Window sizes are scaled by the live capture rate (30 or 60 fps).
+    recentValsBuf[recentHead] = greenValue;
+    recentTimesBuf[recentHead] = timestamp;
+    recentHead = (recentHead + 1) % LIVE_WINDOW_MAX;
+    if (recentCount < LIVE_WINDOW_MAX) recentCount++;
 
-    if (recentVals.length >= Math.round(3 * liveFs)) {
+    const liveFs = liveSampleRate(recentHead, recentCount);
+    const windowLen = Math.min(recentCount, Math.max(90, Math.round(6 * liveFs)));
+    const startIdx = recentHead - windowLen; // chronological first index (may be negative pre-wrap)
+    const at = idx => (startIdx + idx + LIVE_WINDOW_MAX) % LIVE_WINDOW_MAX;
+
+    if (windowLen >= Math.round(3 * liveFs)) {
       // ---- Fingertip presence check ----
       // With fingertip covering camera+flash: green values are dark (lit through skin),
       // stable, with subtle pulsatile variation. Without fingertip: bright, high-variance.
-      const valMean = recentVals.reduce((a, b) => a + b, 0) / recentVals.length;
-      const valStd = Math.sqrt(
-        recentVals.reduce((a, b) => a + (b - valMean) ** 2, 0) / recentVals.length
-      );
-      const valRange = Math.max(...recentVals) - Math.min(...recentVals);
+      let valMean = 0;
+      for (let k = 0; k < windowLen; k++) valMean += recentValsBuf[at(k)];
+      valMean /= windowLen;
+      let valStd = 0, valMin = Infinity, valMax = -Infinity;
+      for (let k = 0; k < windowLen; k++) {
+        const v = recentValsBuf[at(k)];
+        const d = v - valMean;
+        valStd += d * d;
+        if (v < valMin) valMin = v;
+        if (v > valMax) valMax = v;
+      }
+      valStd = Math.sqrt(valStd / windowLen);
+      const valRange = valMax - valMin;
 
       // Conditions for valid fingertip signal:
       // 1. Mean brightness < 80 (fingertip blocks most ambient light, flash shines through)
@@ -241,14 +272,15 @@ function beginCapture() {
 
       // ---- Signal looks like a fingertip — run beat detection ----
       // Cumulative-sum running-mean detrend (O(n), ~1s window scaled to fs)
-      const n = recentVals.length;
+      const n = windowLen;
       const smaWindow = Math.round(liveFs);
       const detrended = new Float64Array(n);
       let run = 0;
-      for (let i = 0; i < n; i++) {
-        run += recentVals[i];
-        if (i > smaWindow) run -= recentVals[i - smaWindow - 1];
-        detrended[i] = recentVals[i] - run / Math.min(smaWindow + 1, i + 1);
+      for (let k = 0; k < n; k++) {
+        const v = recentValsBuf[at(k)];
+        run += v;
+        if (k > smaWindow) run -= recentValsBuf[at(k - smaWindow - 1)];
+        detrended[k] = v - run / Math.min(smaWindow + 1, k + 1);
       }
 
       const dMean = detrended.reduce((a, b) => a + b, 0) / n;
@@ -258,7 +290,7 @@ function beginCapture() {
 
       let beatDetected = false;
       for (let i = 1; i < n - 1; i++) {
-        const ts = recentTimes[i];
+        const ts = recentTimesBuf[at(i)];
         if (detrended[i] < threshold &&
             detrended[i] < detrended[i - 1] &&
             detrended[i] <= detrended[i + 1] &&
