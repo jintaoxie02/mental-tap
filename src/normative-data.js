@@ -67,6 +67,11 @@ export const NORMS_LFHF = {
  * - PTSD: overall HRV reduced
  * - Bipolar: overall HRV reduced
  * - Schizophrenia: RMSSD and HF strongly reduced
+ *
+ * Absolute LF/HF power are excluded from the signatures: this app's FFT power
+ * scale is recording-length/amplitude dependent with no validated norm, so
+ * their z-scores were unreliable. The scale-free LF/HF ratio is kept where
+ * the evidence calls for it (anxiety, PTSD).
  */
 export const DISORDER_SIGNATURES = [
   {
@@ -76,9 +81,6 @@ export const DISORDER_SIGNATURES = [
       sdnn:    { direction: -1, weight: 0.87 },
       rmssd:   { direction: -1, weight: 0.51 },
       pnn50:   { direction: -1, weight: 0.43 },
-      lfPower: { direction: -1, weight: 0.34 },
-      hfPower: { direction: -1, weight: 0.51 },
-      lfhfRatio: { direction: 0, weight: 0.0 },
       glucose: { direction: 1, weight: 0.35 }, // SMD=0.30 from Wong et al. (2026)
     },
     threshold: 1.0,
@@ -91,8 +93,6 @@ export const DISORDER_SIGNATURES = [
       sdnn:    { direction: -1, weight: 0.30 },
       rmssd:   { direction: -1, weight: 0.40 },
       pnn50:   { direction: -1, weight: 0.25 },
-      lfPower: { direction: -1, weight: 0.20 },
-      hfPower: { direction: -1, weight: 0.40 },
       lfhfRatio: { direction: 1, weight: 0.15 }, // mild sympathetic dominance
     },
     threshold: 0.9,
@@ -105,8 +105,6 @@ export const DISORDER_SIGNATURES = [
       sdnn:    { direction: -1, weight: 0.50 },
       rmssd:   { direction: -1, weight: 0.50 },
       pnn50:   { direction: -1, weight: 0.40 },
-      lfPower: { direction: -1, weight: 0.30 },
-      hfPower: { direction: -1, weight: 0.50 },
       lfhfRatio: { direction: 1, weight: 0.20 },
     },
     threshold: 0.9,
@@ -119,9 +117,6 @@ export const DISORDER_SIGNATURES = [
       sdnn:    { direction: -1, weight: 0.35 },
       rmssd:   { direction: -1, weight: 0.35 },
       pnn50:   { direction: -1, weight: 0.25 },
-      lfPower: { direction: -1, weight: 0.20 },
-      hfPower: { direction: -1, weight: 0.35 },
-      lfhfRatio: { direction: 0, weight: 0.0 },
       glucose: { direction: 1, weight: 0.30 }, // metabolic syndrome more common in BD
     },
     threshold: 0.9,
@@ -134,9 +129,6 @@ export const DISORDER_SIGNATURES = [
       sdnn:    { direction: -1, weight: 0.40 },
       rmssd:   { direction: -1, weight: 0.70 },
       pnn50:   { direction: -1, weight: 0.50 },
-      lfPower: { direction: -1, weight: 0.25 },
-      hfPower: { direction: -1, weight: 0.70 },
-      lfhfRatio: { direction: 0, weight: 0.0 },
     },
     threshold: 0.9,
     description: 'Strong parasympathetic (RMSSD, HF) reduction. Strongest evidence in umbrella review.',

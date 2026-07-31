@@ -33,18 +33,29 @@ export class WaveformDisplay {
 
   push(value) {
     const arr = [...this.data, value];
+    let dropped = 0;
     if (arr.length > this.maxPoints) {
-      arr.splice(0, arr.length - this.maxPoints);
+      dropped = arr.length - this.maxPoints;
+      arr.splice(0, dropped);
     }
     this.prevData = this.data;
     this.data = new Float64Array(arr);
+    // Beat markers store absolute buffer indices; shift them left as old
+    // samples fall off the front so they keep tracking the scrolling trace.
+    if (dropped > 0) {
+      for (let i = 0; i < this.beatTimes.length; i++) this.beatTimes[i] -= dropped;
+      this.beatTimes = this.beatTimes.filter(b => b >= 0);
+    }
     if (this.beatFlash > 0) this.beatFlash--;
     this.draw();
   }
 
   /** Mark a beat detection at the current frame */
   markBeat() {
-    this.beatTimes.push(this.data.length - 1);
+    const idx = this.data.length - 1;
+    if (this.beatTimes[this.beatTimes.length - 1] !== idx) {
+      this.beatTimes.push(idx);
+    }
     if (this.beatTimes.length > 40) this.beatTimes.shift();
     this.beatFlash = 12; // flash lasts ~12 frames
   }

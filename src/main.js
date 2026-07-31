@@ -17,7 +17,7 @@ import { WaveformDisplay } from './waveform-display.js';
 import { t, initLang, setLang, getLang } from './i18n.js';
 import {
   showStep, updateTimer, updateBPM, updateProgress,
-  renderResults, showError, showSetupError,
+  renderResults, reRenderResults, showError, showSetupError,
   setButtonEnabled, getAgeSex, triggerBeatVisual,
 } from './ui.js';
 import { translatePage } from './translate.js';
@@ -60,6 +60,7 @@ langSwitch.addEventListener('click', () => {
   if (explainerCalc) {
     explainerCalc.querySelector('.explainer-content').innerHTML = t('explain.calc');
   }
+  reRenderResults(); // screening list carries translated disorder descriptions
   renderRefs();
   updateDisclaimer();
 });
@@ -309,6 +310,13 @@ function finishRecording() {
 
     // HRV
     const hrv = computeHRV(ibis);
+
+    // Bail on insufficient beats — all-zero HRV metrics fed into the Bayesian
+    // screening would produce wildly inflated false-positive posteriors.
+    if (hrv.error) {
+      showError(t('error.no_data'));
+      return;
+    }
 
     // Pulse waveform features (for glucose estimation)
     const waveformFeatures = computeWaveformFeatures(filtered, times, beats);

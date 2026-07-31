@@ -12,7 +12,7 @@
   --bg-card: #1C1C20;
   --text-primary: #F0EFE9;
   --text-secondary: #8B8B85;
-  --text-muted: #5C5C58;
+  --text-muted: #7E7E78;
   --accent-glow: #FF6B35;
   --accent-glow-dim: rgba(255, 107, 53, 0.15);
   --accent-clinical: #4ECDC4;
@@ -177,7 +177,7 @@ body {
   gap: var(--space-sm);
   padding: 14px 32px;
   background: var(--accent-glow);
-  color: #fff;
+  color: var(--bg-primary); /* dark on amber: ~6.6:1, was #fff at ~2.8:1 */
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 500;
@@ -519,7 +519,9 @@ body {
   color: var(--accent-clinical);
 }
 
-.metric-tooltip:hover::after {
+.metric-tooltip:hover::after,
+.metric-tooltip:focus::after,
+.metric-tooltip:active::after {
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -539,6 +541,15 @@ body {
   z-index: 100;
   pointer-events: none;
   text-align: left;
+}
+
+/* First-row metric tooltips open below the icon so they aren't clipped at the
+   top of the viewport on short screens */
+.metrics-grid > .metric-card:nth-child(-n+2) .metric-tooltip:hover::after,
+.metrics-grid > .metric-card:nth-child(-n+2) .metric-tooltip:focus::after,
+.metrics-grid > .metric-card:nth-child(-n+2) .metric-tooltip:active::after {
+  bottom: auto;
+  top: calc(100% + 8px);
 }
 
 /* ---- Metrics explainer (collapsible) ---- */

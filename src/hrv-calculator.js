@@ -48,7 +48,9 @@ export function computeHRV(ibis) {
     sd1Sum += (ibis[i] - ibis[i - 1]) ** 2;
   }
   const sd1 = Math.sqrt(sd1Sum / (2 * (n - 1)));
-  const sd2 = Math.sqrt(2 * sdnn * sdnn - sd1 * sd1);
+  // Clamp the radicand: for a near-perfectly alternating series, floating-point
+  // rounding can push 2·SDNN² − SD1² microscopically negative → NaN.
+  const sd2 = Math.sqrt(Math.max(0, 2 * sdnn * sdnn - sd1 * sd1));
 
   // ---- Frequency domain via Lomb-Scargle periodogram ----
   // We compute LF (0.04–0.15 Hz) and HF (0.15–0.40 Hz) power
@@ -94,6 +96,10 @@ function computeFrequencyDomain(ibis) {
   const nSamples = Math.floor(totalDuration / resampleInterval);
   if (nSamples < 32) return { lfPower: 0, hfPower: 0 };
 
+  // FFT length — the window is zero-padded to this power of two, and bin k
+  // truly sits at k * resampleRate / N.
+  const N = 1 << Math.ceil(Math.log2(nSamples));
+
   const rrUniform = new Float64Array(nSamples);
   for (let i = 0; i < nSamples; i++) {
     const t = i * resampleInterval;
@@ -112,12 +118,12 @@ function computeFrequencyDomain(ibis) {
   }
 
   // Compute power spectrum via simple FFT approach
-  const spectrum = computePSD(windowed, resampleRate);
+  const spectrum = computePSD(windowed, N);
 
   // Integrate power in LF and HF bands
   let lfPower = 0, hfPower = 0;
   for (let i = 0; i < spectrum.length; i++) {
-    const freq = (i * resampleRate) / windowed.length;
+    const freq = (i * resampleRate) / N;
     if (freq >= 0.04 && freq < 0.15) {
       lfPower += spectrum[i];
     } else if (freq >= 0.15 && freq <= 0.40) {
@@ -129,17 +135,14 @@ function computeFrequencyDomain(ibis) {
 }
 
 /**
- * Compute power spectral density using FFT magnitude squared.
- * Simplified DFT-based approach suitable for browser JS.
+ * Periodogram of a zero-padded real signal (RR intervals in ms).
+ * One-sided bin power = |X[k]|² / N² — independent of sample rate and of the
+ * padding length, so LF/HF band sums are on a stable ms² scale.
  */
-function computePSD(signal, sampleRate) {
-  const n = signal.length;
-  // Pad to power of 2 for FFT efficiency
-  const N = 1 << Math.ceil(Math.log2(n));
+function computePSD(signal, N) {
   const padded = new Float64Array(N);
   padded.set(signal);
 
-  // Use a simple real FFT approximation
   const psd = new Float64Array(N / 2);
   for (let k = 0; k < N / 2; k++) {
     let re = 0, im = 0;
@@ -148,7 +151,7 @@ function computePSD(signal, sampleRate) {
       re += padded[j] * Math.cos(angle);
       im += padded[j] * Math.sin(angle);
     }
-    psd[k] = (re * re + im * im) / (N * sampleRate);
+    psd[k] = (re * re + im * im) / (N * N);
   }
 
   return psd;

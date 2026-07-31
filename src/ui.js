@@ -86,7 +86,12 @@ export function updateProgress(percent) {
   if (el) el.style.width = `${Math.min(100, Math.max(0, percent))}%`;
 }
 
+let lastRender = null;
+
 export function renderResults(hrv, screening, age, sex, glucose = null) {
+  // Remember the args so a language switch can re-render translated text
+  lastRender = { hrv, screening, age, sex, glucose };
+
   // HRV metrics
   const metrics = [
     { id: 'sdnn', value: hrv.sdnn, unit: 'ms' },
@@ -162,6 +167,13 @@ export function renderResults(hrv, screening, age, sex, glucose = null) {
   }
 }
 
+/** Re-render the last results (e.g., after a language switch). */
+export function reRenderResults() {
+  if (lastRender) {
+    renderResults(lastRender.hrv, lastRender.screening, lastRender.age, lastRender.sex, lastRender.glucose);
+  }
+}
+
 export function showError(message) {
   const el = document.getElementById('error-message');
   if (el) el.textContent = message;
@@ -184,8 +196,9 @@ export function setButtonEnabled(id, enabled) {
 export function getAgeSex() {
   const ageEl = document.getElementById('input-age');
   const sexEl = document.getElementById('input-sex');
-  return {
-    age: parseInt(ageEl?.value || '30', 10),
-    sex: sexEl?.value || 'female',
-  };
+  let age = parseInt(ageEl?.value || '30', 10);
+  // A cleared/out-of-range age must not silently fall through getAgeGroup to
+  // the oldest (75-90) bucket, which would bias every z-score low.
+  if (!Number.isFinite(age) || age < 18 || age > 90) age = 30;
+  return { age, sex: sexEl?.value || 'female' };
 }

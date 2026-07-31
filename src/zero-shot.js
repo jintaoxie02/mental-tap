@@ -74,13 +74,28 @@ function featureLogBF(z, g, direction) {
  * @returns {object} Screening results with posterior probabilities
  */
 export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
+  // Refuse invalid HRV input: all-zero metrics (insufficient beats) would
+  // z-score as severely reduced HRV and inflate every disorder posterior.
+  if (!hrv || hrv.error) {
+    return {
+      results: [],
+      zScores: {},
+      ageGroup: getAgeGroup(age),
+      sex,
+      error: hrv && hrv.error ? hrv.error : 'Invalid HRV input',
+    };
+  }
+
+  // Absolute LF/HF power are deliberately NOT screened: the FFT's power scale
+  // depends on recording length and signal amplitude, and no validated norm
+  // exists for this pipeline — the old hardcoded 1200/800 ms² norms produced
+  // z-scores of ±hundreds of σ and dominated every posterior. The scale-free
+  // LF/HF ratio is still used where the disorder signature calls for it.
   const norms = {
     sdnn: getNorm(NORMS_SDNN, age, sex),
     rmssd: getNorm(NORMS_RMSSD, age, sex),
     pnn50: getNorm(NORMS_PNN50, age, sex),
     lfhfRatio: getNorm(NORMS_LFHF, age, sex),
-    lfPower: { mean: 1200, sd: 800 },
-    hfPower: { mean: 800, sd: 600 },
   };
 
   // z-scores
@@ -133,11 +148,10 @@ export function screenDisorders(hrv, age, sex, glucoseEstimate = null) {
       };
     }
 
-    // Posterior odds = prior_odds × exp(total_log_BF)
-    const posteriorOdds = priorOdds * Math.exp(totalLogBF);
-
-    // Posterior probability P(D | data)
-    const posterior = posteriorOdds / (1 + posteriorOdds);
+    // Posterior probability P(D | data), computed in log-odds form so an
+    // extreme Bayes factor can't overflow exp() to Infinity → NaN posterior.
+    const logPosteriorOdds = Math.log(priorOdds) + totalLogBF;
+    const posterior = 1 / (1 + Math.exp(-logPosteriorOdds));
     const probability = Math.round(posterior * 100);
 
     // Level classification based on posterior probability

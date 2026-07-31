@@ -26,12 +26,13 @@ export function computeWaveformFeatures(signal, timestamps, beats) {
     const centerIdx = Math.round(beat.index);
     const start = Math.max(0, centerIdx - halfWindow);
     const end = Math.min(signal.length, centerIdx + halfWindow);
-    if (end - start < halfWindow) continue;
+    // Only accept full-length segments. Each window is centered on a detected
+    // peak, so raw-index averaging is already peak-aligned; edge-truncated
+    // windows are off-center and would smear the averaged template (making
+    // crestTime / notch features depend on where the first beat lands).
+    if (end - start < 2 * halfWindow) continue;
 
-    const segment = signal.slice(start, end);
-    // Align by peak
-    const peakInSeg = segment.indexOf(Math.max(...segment));
-    templates.push({ segment, peakIdx: peakInSeg });
+    templates.push(signal.slice(start, end));
   }
 
   if (templates.length < 3) {
@@ -41,16 +42,13 @@ export function computeWaveformFeatures(signal, timestamps, beats) {
     };
   }
 
-  // Average template
-  const templateLen = Math.min(...templates.map(t => t.segment.length));
+  // Average template (all segments are the same full length, peak-centered)
+  const templateLen = 2 * halfWindow;
   const avgTemplate = new Float64Array(templateLen);
-  for (let i = 0; i < templateLen; i++) {
-    let sum = 0;
-    for (const t of templates) {
-      sum += t.segment[i];
-    }
-    avgTemplate[i] = sum / templates.length;
+  for (const segment of templates) {
+    for (let i = 0; i < templateLen; i++) avgTemplate[i] += segment[i];
   }
+  for (let i = 0; i < templateLen; i++) avgTemplate[i] /= templates.length;
 
   // Normalize template to [0, 1]
   const tMin = Math.min(...avgTemplate);
