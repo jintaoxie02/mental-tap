@@ -10,6 +10,7 @@ import { getCamera, startCapture, stopCamera } from './camera.js';
 import { createBandpassFilter } from './signal-filter.js';
 import { detectBeats } from './beat-detector.js';
 import { editIbis } from './ibi-editor.js';
+import { evaluateSegments } from './signal-quality.js';
 import { computeHRV } from './hrv-calculator.js';
 import { computeWaveformFeatures } from './waveform-features.js';
 import { screenDisorders } from './zero-shot.js';
@@ -191,25 +192,29 @@ function beginCapture() {
     allGreenValues.push(greenValue);
     allTimestamps.push(timestamp);
 
-    if (allGreenValues.length > 7200) {
-      allGreenValues = allGreenValues.slice(-5400);
-      allTimestamps = allTimestamps.slice(-5400);
+    if (allGreenValues.length > 10800) {
+      allGreenValues = allGreenValues.slice(-8100);
+      allTimestamps = allTimestamps.slice(-8100);
     }
 
-    // Push raw green value to waveform every 3rd frame (~10Hz)
+    // Push raw green value to the waveform every 3rd frame
     if (allGreenValues.length % 3 === 0) {
       waveform.push(greenValue);
     }
 
-    // BPM via detrended signal minima detection (5s rolling window)
+    // BPM via detrended signal valley detection (~6s rolling window).
+    // Window sizes are scaled by the live capture rate so the same code works
+    // at 30 or 60 fps.
     recentVals.push(greenValue);
     recentTimes.push(timestamp);
-    if (recentVals.length > 180) {
-      recentVals = recentVals.slice(-180);
-      recentTimes = recentTimes.slice(-180);
+    const liveFs = recentTimes.length > 4 ? estimateFs(recentTimes) : 30;
+    const windowLen = Math.max(90, Math.round(6 * liveFs));
+    if (recentVals.length > windowLen) {
+      recentVals = recentVals.slice(-windowLen);
+      recentTimes = recentTimes.slice(-windowLen);
     }
 
-    if (recentVals.length >= 90) {
+    if (recentVals.length >= Math.round(3 * liveFs)) {
       // ---- Fingertip presence check ----
       // With fingertip covering camera+flash: green values are dark (lit through skin),
       // stable, with subtle pulsatile variation. Without fingertip: bright, high-variance.
@@ -235,14 +240,15 @@ function beginCapture() {
       }
 
       // ---- Signal looks like a fingertip — run beat detection ----
+      // Cumulative-sum running-mean detrend (O(n), ~1s window scaled to fs)
       const n = recentVals.length;
-      const smaWindow = 30;
+      const smaWindow = Math.round(liveFs);
       const detrended = new Float64Array(n);
+      let run = 0;
       for (let i = 0; i < n; i++) {
-        const start = Math.max(0, i - smaWindow);
-        let sum = 0;
-        for (let j = start; j <= i; j++) sum += recentVals[j];
-        detrended[i] = recentVals[i] - sum / (i - start + 1);
+        run += recentVals[i];
+        if (i > smaWindow) run -= recentVals[i - smaWindow - 1];
+        detrended[i] = recentVals[i] - run / Math.min(smaWindow + 1, i + 1);
       }
 
       const dMean = detrended.reduce((a, b) => a + b, 0) / n;
@@ -307,11 +313,32 @@ function finishRecording() {
   try {
     // Real capture rate (30 or 60 fps on typical phones) — every downstream
     // window/coefficient is parameterized on it.
-    const times = new Float64Array(allTimestamps);
-    const fs = estimateFs(times);
+    const fs = estimateFs(allTimestamps);
+
+    // Segmental signal-quality gate: drop corrupted windows (motion, exposure
+    // shifts, finger lifts). Garbage windows would otherwise feed spurious
+    // beats into the HRV metrics; require at least 60 s of accepted signal.
+    const segments = evaluateSegments(allGreenValues, allTimestamps, fs);
+    const acceptedSec = segments
+      .filter(s => s.good)
+      .reduce((sum, s) => sum + (s.end - s.start) / fs, 0);
+    if (acceptedSec < 60) {
+      showError(t('error.signal_quality'));
+      return;
+    }
+    const goodGreen = [];
+    const goodTimes = [];
+    segments.forEach(seg => {
+      if (!seg.good) return;
+      for (let i = seg.start; i < seg.end; i++) {
+        goodGreen.push(allGreenValues[i]);
+        goodTimes.push(allTimestamps[i]);
+      }
+    });
 
     // Build PPG signal
-    const raw = new Float64Array(allGreenValues);
+    const times = new Float64Array(goodTimes);
+    const raw = new Float64Array(goodGreen);
     const mean = raw.reduce((a, b) => a + b, 0) / raw.length;
     const inverted = Float64Array.from(raw, v => -(v - mean));
 

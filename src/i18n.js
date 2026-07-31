@@ -109,6 +109,7 @@ const STRINGS = {
     'error.camera_in_use': 'Camera is in use by another app. Close other apps and try again.',
     'error.camera_unavailable': 'Camera not available',
     'error.signal_failed': 'Signal processing error. Please ensure your fingertip covers the camera and flash completely, then try again.',
+    'error.signal_quality': 'Signal quality too low. Keep your fingertip still, cover the camera fully, and try again.',
 
     // Disorder descriptions
     'disorder.depression': 'Reduced HRV across all domains (especially SDNN, g = −0.87).',
@@ -226,6 +227,7 @@ const STRINGS = {
     'error.camera_in_use': '鏡頭正被其他app使用。請關閉其他app再試。',
     'error.camera_unavailable': '鏡頭無法使用',
     'error.signal_failed': '訊號處理出錯。請確保指尖完全遮蓋鏡頭同閃光燈，然後再試。',
+    'error.signal_quality': '訊號質素太低。請保持指尖穩定，完全遮蓋鏡頭，然後再試。',
 
     // Disorder descriptions
     'disorder.depression': '心跳變化大幅減少（尤其SDNN, g = −0.87）',

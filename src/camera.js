@@ -10,7 +10,10 @@ export async function getCamera() {
       facingMode: { ideal: 'environment' },
       width: { ideal: 640 },
       height: { ideal: 480 },
-      frameRate: { ideal: 30 },
+      // Prefer 60 fps — beat-timing quantization (and therefore RMSSD noise)
+      // roughly halves vs 30 fps. Devices that can't deliver 60 fps fall back
+      // automatically; the analysis adapts via estimateFs().
+      frameRate: { ideal: 60 },
     },
     audio: false,
   };
@@ -77,7 +80,7 @@ export function startCapture(track, onFrame) {
 
   let animId;
   let lastTime = 0;
-  const targetInterval = 33; // ~30fps
+  const targetInterval = 16; // ~60fps target (adapts to delivered rate)
   let frameCount = 0;
 
   function processFrame(timestamp) {
